@@ -1,0 +1,1493 @@
+{
+  "schemaVersion": 1,
+  "questions": [
+    {
+      "id": "javascript.001",
+      "category": "javascript",
+      "prompt": "Как объявить переменную, значение которой можно переназначить?",
+      "options": [
+        "const x = 1",
+        "let x = 1",
+        "fixed x = 1"
+      ],
+      "answerIndex": 1,
+      "explanation": "let позволяет присваивать переменной новое значение."
+    },
+    {
+      "id": "javascript.002",
+      "category": "javascript",
+      "prompt": "Что выведет typeof null?",
+      "options": [
+        "null",
+        "object",
+        "undefined"
+      ],
+      "answerIndex": 1,
+      "explanation": "Это историческая особенность JavaScript: typeof null возвращает object."
+    },
+    {
+      "id": "javascript.003",
+      "category": "javascript",
+      "prompt": "Какое значение считаетcя falsy?",
+      "options": [
+        "[]",
+        "{}",
+        "0"
+      ],
+      "answerIndex": 2,
+      "explanation": "Ноль преобразуется в false в логическом контексте."
+    },
+    {
+      "id": "javascript.004",
+      "category": "javascript",
+      "prompt": "Что вернёт выражение 3 + '2'?",
+      "options": [
+        "5",
+        "'32'",
+        "NaN"
+      ],
+      "answerIndex": 1,
+      "explanation": "При сложении строка вызывает конкатенацию после преобразования числа."
+    },
+    {
+      "id": "javascript.005",
+      "category": "javascript",
+      "prompt": "Что делает оператор ===?",
+      "options": [
+        "Сравнивает значение и тип без приведения",
+        "Сравнивает только тип",
+        "Присваивает значение"
+      ],
+      "answerIndex": 0,
+      "explanation": "Строгое равенство не выполняет неявное приведение типов."
+    },
+    {
+      "id": "javascript.006",
+      "category": "javascript",
+      "prompt": "Как получить последний элемент массива a?",
+      "options": [
+        "a[a.length]",
+        "a[a.length - 1]",
+        "a.last"
+      ],
+      "answerIndex": 1,
+      "explanation": "Индексы массива начинаются с нуля."
+    },
+    {
+      "id": "javascript.007",
+      "category": "javascript",
+      "prompt": "Что делает Array.map()?",
+      "options": [
+        "Создаёт массив результатов преобразования элементов",
+        "Удаляет дубликаты",
+        "Сортирует исходный массив"
+      ],
+      "answerIndex": 0,
+      "explanation": "map вызывает функцию для каждого элемента и возвращает новый массив."
+    },
+    {
+      "id": "javascript.008",
+      "category": "javascript",
+      "prompt": "Что делает Array.filter()?",
+      "options": [
+        "Возвращает элементы, прошедшие условие",
+        "Преобразует каждый элемент",
+        "Объединяет массивы"
+      ],
+      "answerIndex": 0,
+      "explanation": "filter оставляет элементы, для которых callback вернул true."
+    },
+    {
+      "id": "javascript.009",
+      "category": "javascript",
+      "prompt": "Как проверить, что x — массив?",
+      "options": [
+        "x instanceof ArrayList",
+        "Array.isArray(x)",
+        "typeof x === 'array'"
+      ],
+      "answerIndex": 1,
+      "explanation": "Array.isArray — стандартная надёжная проверка массива."
+    },
+    {
+      "id": "javascript.010",
+      "category": "javascript",
+      "prompt": "Что возвращает функция без return?",
+      "options": [
+        "null",
+        "0",
+        "undefined"
+      ],
+      "answerIndex": 2,
+      "explanation": "Если return не выполнен, результат вызова — undefined."
+    },
+    {
+      "id": "javascript.011",
+      "category": "javascript",
+      "prompt": "Что такое замыкание?",
+      "options": [
+        "Функция вместе с доступом к внешнему лексическому окружению",
+        "Способ закрыть вкладку",
+        "Метод сортировки"
+      ],
+      "answerIndex": 0,
+      "explanation": "Замыкание сохраняет доступ к переменным области, где функция была создана."
+    },
+    {
+      "id": "javascript.012",
+      "category": "javascript",
+      "prompt": "Как объявить стрелочную функцию сложения?",
+      "options": [
+        "const add = (a, b) => a + b",
+        "function => add(a,b)",
+        "const add -> a + b"
+      ],
+      "answerIndex": 0,
+      "explanation": "Стрелочная функция использует => между параметрами и телом."
+    },
+    {
+      "id": "javascript.013",
+      "category": "javascript",
+      "prompt": "Что делает JSON.parse(text)?",
+      "options": [
+        "Преобразует JSON-строку в значение JavaScript",
+        "Преобразует объект в JSON-строку",
+        "Проверяет тип переменной"
+      ],
+      "answerIndex": 0,
+      "explanation": "Для обратного преобразования в строку используется JSON.stringify."
+    },
+    {
+      "id": "javascript.014",
+      "category": "javascript",
+      "prompt": "Как безопасно обратиться к свойству, которого может не быть?",
+      "options": [
+        "user?.address?.city",
+        "user!!address.city",
+        "user::address.city"
+      ],
+      "answerIndex": 0,
+      "explanation": "Optional chaining прекращает цепочку при null или undefined."
+    },
+    {
+      "id": "javascript.015",
+      "category": "javascript",
+      "prompt": "Что делает оператор ???",
+      "options": [
+        "Выбирает правое значение только при null или undefined слева",
+        "Всегда возвращает false",
+        "Сравнивает два объекта"
+      ],
+      "answerIndex": 0,
+      "explanation": "Nullish coalescing не заменяет 0, false или пустую строку."
+    },
+    {
+      "id": "javascript.016",
+      "category": "javascript",
+      "prompt": "Что вернёт Boolean('')?",
+      "options": [
+        "true",
+        "false",
+        "undefined"
+      ],
+      "answerIndex": 1,
+      "explanation": "Пустая строка — falsy."
+    },
+    {
+      "id": "javascript.017",
+      "category": "javascript",
+      "prompt": "Как добавить элемент в конец массива?",
+      "options": [
+        "arr.push(item)",
+        "arr.pop(item)",
+        "arr.shift(item)"
+      ],
+      "answerIndex": 0,
+      "explanation": "push добавляет один или несколько элементов в конец."
+    },
+    {
+      "id": "javascript.018",
+      "category": "javascript",
+      "prompt": "Что делает Array.reduce()?",
+      "options": [
+        "Сворачивает элементы в одно итоговое значение",
+        "Меняет имя массива",
+        "Оставляет только строки"
+      ],
+      "answerIndex": 0,
+      "explanation": "reduce передаёт накопитель через элементы массива."
+    },
+    {
+      "id": "javascript.019",
+      "category": "javascript",
+      "prompt": "Как создать копию массива поверхностно?",
+      "options": [
+        "const copy = [...items]",
+        "const copy = items",
+        "const copy = new Array(items)"
+      ],
+      "answerIndex": 0,
+      "explanation": "Spread создаёт новый массив, но вложенные объекты остаются общими."
+    },
+    {
+      "id": "javascript.020",
+      "category": "javascript",
+      "prompt": "Что означает NaN?",
+      "options": [
+        "Not a Number",
+        "New and Null",
+        "Negative Array Number"
+      ],
+      "answerIndex": 0,
+      "explanation": "NaN — специальное числовое значение для неопределённого результата вычисления."
+    },
+    {
+      "id": "javascript.021",
+      "category": "javascript",
+      "prompt": "Как проверить NaN надёжно?",
+      "options": [
+        "Number.isNaN(value)",
+        "value === NaN",
+        "typeof value === 'nan'"
+      ],
+      "answerIndex": 0,
+      "explanation": "NaN не равен самому себе, поэтому для проверки есть Number.isNaN."
+    },
+    {
+      "id": "javascript.022",
+      "category": "javascript",
+      "prompt": "Как создать Promise, который сразу успешно выполнен?",
+      "options": [
+        "Promise.resolve(value)",
+        "Promise.done(value)",
+        "new Promise.value(value)"
+      ],
+      "answerIndex": 0,
+      "explanation": "Promise.resolve создаёт fulfilled Promise."
+    },
+    {
+      "id": "javascript.023",
+      "category": "javascript",
+      "prompt": "Что делает await внутри async-функции?",
+      "options": [
+        "Приостанавливает эту async-функцию до результата Promise",
+        "Останавливает весь браузер",
+        "Превращает Promise в callback"
+      ],
+      "answerIndex": 0,
+      "explanation": "await не блокирует поток интерфейса, а продолжает функцию позже."
+    },
+    {
+      "id": "javascript.024",
+      "category": "javascript",
+      "prompt": "Как обработать ошибку async-вызова?",
+      "options": [
+        "try/catch вокруг await",
+        "Только оператор typeof",
+        "Переименовать Promise"
+      ],
+      "answerIndex": 0,
+      "explanation": "Отклонённый Promise при await можно поймать блоком catch."
+    },
+    {
+      "id": "javascript.025",
+      "category": "javascript",
+      "prompt": "Когда обычно срабатывает setTimeout(callback, 0)?",
+      "options": [
+        "После текущего синхронного кода, когда очередь позволит",
+        "До следующей строки",
+        "Ровно через ноль миллисекунд"
+      ],
+      "answerIndex": 0,
+      "explanation": "Таймер ставит callback в очередь задач; нулевая задержка не означает немедленный запуск."
+    },
+    {
+      "id": "javascript.026",
+      "category": "javascript",
+      "prompt": "Что такое DOM?",
+      "options": [
+        "Объектная модель документа страницы",
+        "Формат изображения",
+        "Система типов TypeScript"
+      ],
+      "answerIndex": 0,
+      "explanation": "DOM представляет HTML-документ в виде объектов."
+    },
+    {
+      "id": "javascript.027",
+      "category": "javascript",
+      "prompt": "Как выбрать элемент с id='menu'?",
+      "options": [
+        "document.querySelector('#menu')",
+        "document.getId('menu')",
+        "window.findId('menu')"
+      ],
+      "answerIndex": 0,
+      "explanation": "querySelector принимает CSS-селектор."
+    },
+    {
+      "id": "javascript.028",
+      "category": "javascript",
+      "prompt": "Что делает addEventListener?",
+      "options": [
+        "Подписывает функцию на событие",
+        "Удаляет DOM-узел",
+        "Создаёт CSS-класс"
+      ],
+      "answerIndex": 0,
+      "explanation": "Метод регистрирует обработчик события на объекте."
+    },
+    {
+      "id": "javascript.029",
+      "category": "javascript",
+      "prompt": "Что такое event bubbling?",
+      "options": [
+        "Всплытие события от целевого элемента к предкам",
+        "Загрузка изображения",
+        "Повторное выполнение цикла"
+      ],
+      "answerIndex": 0,
+      "explanation": "При всплытии событие проходит вверх по DOM-дереву."
+    },
+    {
+      "id": "javascript.030",
+      "category": "javascript",
+      "prompt": "Как остановить всплытие события?",
+      "options": [
+        "event.stopPropagation()",
+        "event.preventBubble()",
+        "return false всегда"
+      ],
+      "answerIndex": 0,
+      "explanation": "stopPropagation прекращает дальнейшее распространение события."
+    },
+    {
+      "id": "javascript.031",
+      "category": "javascript",
+      "prompt": "Для чего нужен preventDefault()?",
+      "options": [
+        "Отменить стандартное действие браузера",
+        "Удалить обработчики",
+        "Остановить все таймеры"
+      ],
+      "answerIndex": 0,
+      "explanation": "Например, можно отменить стандартный переход формы."
+    },
+    {
+      "id": "javascript.032",
+      "category": "javascript",
+      "prompt": "Как объявить именованный экспорт?",
+      "options": [
+        "export const name = 'Ada'",
+        "public const name = 'Ada'",
+        "send const name = 'Ada'"
+      ],
+      "answerIndex": 0,
+      "explanation": "Ключевое слово export делает binding доступным из модуля."
+    },
+    {
+      "id": "javascript.033",
+      "category": "javascript",
+      "prompt": "Что импортирует import x from './x.js'?",
+      "options": [
+        "Экспорт по умолчанию модуля",
+        "Все именованные экспорты",
+        "CSS из файла"
+      ],
+      "answerIndex": 0,
+      "explanation": "Синтаксис без фигурных скобок импортирует default export."
+    },
+    {
+      "id": "javascript.034",
+      "category": "javascript",
+      "prompt": "Что делает Object.keys(obj)?",
+      "options": [
+        "Возвращает массив собственных перечисляемых ключей",
+        "Удаляет ключи",
+        "Возвращает значения и методы прототипа"
+      ],
+      "answerIndex": 0,
+      "explanation": "Object.keys перечисляет собственные enumerable string keys."
+    },
+    {
+      "id": "javascript.035",
+      "category": "javascript",
+      "prompt": "Как проверить наличие собственного свойства?",
+      "options": [
+        "Object.hasOwn(obj, 'key')",
+        "obj.includes('key')",
+        "Object.isPrototype(obj, 'key')"
+      ],
+      "answerIndex": 0,
+      "explanation": "Object.hasOwn не считает унаследованные свойства."
+    },
+    {
+      "id": "javascript.036",
+      "category": "javascript",
+      "prompt": "Что вернёт [...new Set([1,1,2])]?",
+      "options": [
+        "[1, 1, 2]",
+        "[1, 2]",
+        "[2, 1, 1]"
+      ],
+      "answerIndex": 1,
+      "explanation": "Set хранит уникальные значения, а spread превращает их обратно в массив."
+    },
+    {
+      "id": "javascript.037",
+      "category": "javascript",
+      "prompt": "Какой метод массива меняет исходный массив и сортирует его?",
+      "options": [
+        "toSorted()",
+        "sort()",
+        "sorted()"
+      ],
+      "answerIndex": 1,
+      "explanation": "sort сортирует на месте; toSorted создаёт новый массив в современных средах."
+    },
+    {
+      "id": "javascript.038",
+      "category": "javascript",
+      "prompt": "Почему сравнение двух объектов через === обычно false?",
+      "options": [
+        "Сравниваются ссылки на объект",
+        "Объекты нельзя сравнивать",
+        "=== сравнивает только ключи"
+      ],
+      "answerIndex": 0,
+      "explanation": "Равны только ссылки на один и тот же объект."
+    },
+    {
+      "id": "javascript.039",
+      "category": "javascript",
+      "prompt": "Что означает this в обычном методе объекта?",
+      "options": [
+        "Обычно объект-владелец вызова метода",
+        "Всегда window",
+        "Всегда текущий файл"
+      ],
+      "answerIndex": 0,
+      "explanation": "Значение this зависит от способа вызова функции."
+    },
+    {
+      "id": "javascript.040",
+      "category": "javascript",
+      "prompt": "Что характерно для стрелочной функции и this?",
+      "options": [
+        "Она берёт this из внешней области",
+        "У неё всегда собственный this",
+        "Она автоматически привязывает this к window"
+      ],
+      "answerIndex": 0,
+      "explanation": "У стрелочной функции нет собственного this binding."
+    },
+    {
+      "id": "typescript.041",
+      "category": "typescript",
+      "prompt": "Какой тип подходит для строки?",
+      "options": [
+        "string",
+        "StringType",
+        "text"
+      ],
+      "answerIndex": 0,
+      "explanation": "В TypeScript примитивный строковый тип пишется string."
+    },
+    {
+      "id": "typescript.042",
+      "category": "typescript",
+      "prompt": "Какой тип подходит для целого числа?",
+      "options": [
+        "int",
+        "number",
+        "integer"
+      ],
+      "answerIndex": 1,
+      "explanation": "TypeScript использует общий тип number для чисел."
+    },
+    {
+      "id": "typescript.043",
+      "category": "typescript",
+      "prompt": "Как указать, что переменная может быть строкой или числом?",
+      "options": [
+        "string & number",
+        "string | number",
+        "string / number"
+      ],
+      "answerIndex": 1,
+      "explanation": "Вертикальная черта задаёт union type."
+    },
+    {
+      "id": "typescript.044",
+      "category": "typescript",
+      "prompt": "Что означает тип string | null?",
+      "options": [
+        "Строка или null",
+        "Строка, но не null",
+        "Любое значение кроме строки"
+      ],
+      "answerIndex": 0,
+      "explanation": "Union допускает любое из перечисленных типов."
+    },
+    {
+      "id": "typescript.045",
+      "category": "typescript",
+      "prompt": "Что проверяет strictNullChecks?",
+      "options": [
+        "Отделяет null/undefined от обычных типов",
+        "Запрещает все функции",
+        "Делает свойства readonly"
+      ],
+      "answerIndex": 0,
+      "explanation": "При строгой проверке null и undefined нужно учитывать явно."
+    },
+    {
+      "id": "typescript.046",
+      "category": "typescript",
+      "prompt": "Как объявить массив чисел?",
+      "options": [
+        "number[]",
+        "numbers",
+        "Array<number[]>"
+      ],
+      "answerIndex": 0,
+      "explanation": "number[] и Array<number> — эквивалентные формы."
+    },
+    {
+      "id": "typescript.047",
+      "category": "typescript",
+      "prompt": "Что описывает interface User { name: string }?",
+      "options": [
+        "Форму объектов с обязательным name",
+        "Новый runtime-класс",
+        "Массив имён"
+      ],
+      "answerIndex": 0,
+      "explanation": "Интерфейс задаёт структурное описание типа."
+    },
+    {
+      "id": "typescript.048",
+      "category": "typescript",
+      "prompt": "Как сделать свойство опциональным?",
+      "options": [
+        "name?: string",
+        "optional name: string",
+        "name: optional string"
+      ],
+      "answerIndex": 0,
+      "explanation": "Знак ? после имени свойства обозначает необязательность."
+    },
+    {
+      "id": "typescript.049",
+      "category": "typescript",
+      "prompt": "Как объявить свойство только для чтения?",
+      "options": [
+        "readonly id: number",
+        "const id: number",
+        "immutable id: number"
+      ],
+      "answerIndex": 0,
+      "explanation": "readonly запрещает переназначение свойства через этот тип."
+    },
+    {
+      "id": "typescript.050",
+      "category": "typescript",
+      "prompt": "Что делает type alias?",
+      "options": [
+        "Даёт имя типу",
+        "Создаёт новый объект во время выполнения",
+        "Запускает компилятор"
+      ],
+      "answerIndex": 0,
+      "explanation": "type UserId = string задаёт псевдоним типа на этапе проверки."
+    },
+    {
+      "id": "typescript.051",
+      "category": "typescript",
+      "prompt": "Для чего нужен enum?",
+      "options": [
+        "Для именованного набора связанных значений",
+        "Для обработки Promise",
+        "Для CSS-переменных"
+      ],
+      "answerIndex": 0,
+      "explanation": "Варианты enum группируют именованные значения; во многих случаях используют union литералов."
+    },
+    {
+      "id": "typescript.052",
+      "category": "typescript",
+      "prompt": "Что такое literal type 'open' | 'closed'?",
+      "options": [
+        "Тип из двух конкретных строковых значений",
+        "Любая строка",
+        "Регулярное выражение"
+      ],
+      "answerIndex": 0,
+      "explanation": "Literal union ограничивает допустимые значения указанными литералами."
+    },
+    {
+      "id": "typescript.053",
+      "category": "typescript",
+      "prompt": "Что делает generic функция identity<T>(x: T): T?",
+      "options": [
+        "Сохраняет связь типа входа и результата",
+        "Всегда возвращает строку",
+        "Удаляет типы при запуске"
+      ],
+      "answerIndex": 0,
+      "explanation": "Параметр типа позволяет повторно использовать форму типа."
+    },
+    {
+      "id": "typescript.054",
+      "category": "typescript",
+      "prompt": "Как типизировать Promise со строкой?",
+      "options": [
+        "Promise<string>",
+        "Async<string>",
+        "Future<string>"
+      ],
+      "answerIndex": 0,
+      "explanation": "Promise<T> описывает значение, которым разрешится Promise."
+    },
+    {
+      "id": "typescript.055",
+      "category": "typescript",
+      "prompt": "Что возвращает функция, которая ничего явно не возвращает?",
+      "options": [
+        "void",
+        "never всегда",
+        "unknown всегда"
+      ],
+      "answerIndex": 0,
+      "explanation": "Для функции без значимого результата обычно используют void."
+    },
+    {
+      "id": "typescript.056",
+      "category": "typescript",
+      "prompt": "Когда уместен тип never?",
+      "options": [
+        "Функция никогда не завершается обычным значением",
+        "Функция возвращает null",
+        "Любое неизвестное значение"
+      ],
+      "answerIndex": 0,
+      "explanation": "never встречается, например, у функции, которая всегда бросает ошибку."
+    },
+    {
+      "id": "typescript.057",
+      "category": "typescript",
+      "prompt": "Что означает unknown?",
+      "options": [
+        "Значение любого типа, требующее проверки перед использованием",
+        "Тип без проверок, как any",
+        "Отсутствие значения"
+      ],
+      "answerIndex": 0,
+      "explanation": "unknown безопаснее any: сначала сузьте тип."
+    },
+    {
+      "id": "typescript.058",
+      "category": "typescript",
+      "prompt": "Почему any нежелательно использовать повсюду?",
+      "options": [
+        "Отключает значительную часть статических проверок",
+        "Замедляет браузер",
+        "Не поддерживает объекты"
+      ],
+      "answerIndex": 0,
+      "explanation": "any позволяет пропускать проверки и скрывает ошибки типов."
+    },
+    {
+      "id": "typescript.059",
+      "category": "typescript",
+      "prompt": "Что делает type narrowing?",
+      "options": [
+        "Сужает тип после проверок или ветвления",
+        "Сжимает JS-файл",
+        "Преобразует интерфейс в класс"
+      ],
+      "answerIndex": 0,
+      "explanation": "Проверки typeof, in и guards помогают компилятору определить более точный тип."
+    },
+    {
+      "id": "typescript.060",
+      "category": "typescript",
+      "prompt": "Что проверяет typeof value === 'string'?",
+      "options": [
+        "Позволяет сузить value до string в ветке",
+        "Меняет значение на строку",
+        "Удаляет значение"
+      ],
+      "answerIndex": 0,
+      "explanation": "Это runtime-проверка, которую TypeScript понимает как type guard."
+    },
+    {
+      "id": "typescript.061",
+      "category": "typescript",
+      "prompt": "Как безопасно использовать union Cat | Dog с общим полем kind?",
+      "options": [
+        "Проверить kind и обработать варианты",
+        "Сразу привести к any",
+        "Вызвать оба набора методов"
+      ],
+      "answerIndex": 0,
+      "explanation": "Discriminated union с общим literal-полем помогает сузить тип."
+    },
+    {
+      "id": "typescript.062",
+      "category": "typescript",
+      "prompt": "Что означает keyof User?",
+      "options": [
+        "Union ключей типа User",
+        "Значения свойств User",
+        "Имя интерфейса как строка"
+      ],
+      "answerIndex": 0,
+      "explanation": "keyof создаёт тип из имён доступных ключей."
+    },
+    {
+      "id": "typescript.063",
+      "category": "typescript",
+      "prompt": "Что делает Partial<User>?",
+      "options": [
+        "Делает все свойства User необязательными",
+        "Удаляет все свойства",
+        "Делает свойства приватными"
+      ],
+      "answerIndex": 0,
+      "explanation": "Partial — встроенный mapped utility type."
+    },
+    {
+      "id": "typescript.064",
+      "category": "typescript",
+      "prompt": "Что делает Pick<User, 'id'>?",
+      "options": [
+        "Создаёт тип только с выбранными ключами",
+        "Удаляет id",
+        "Выбирает объект во время выполнения"
+      ],
+      "answerIndex": 0,
+      "explanation": "Pick формирует тип из перечисленных свойств исходного типа."
+    },
+    {
+      "id": "typescript.065",
+      "category": "typescript",
+      "prompt": "Что делает Omit<User, 'password'>?",
+      "options": [
+        "Создаёт тип без указанного свойства",
+        "Меняет значение password",
+        "Скрывает поле только в UI"
+      ],
+      "answerIndex": 0,
+      "explanation": "Omit исключает выбранные ключи из типа."
+    },
+    {
+      "id": "typescript.066",
+      "category": "typescript",
+      "prompt": "Как отметить параметр функции необязательным?",
+      "options": [
+        "function f(x?: number)",
+        "function f(?x: number)",
+        "function f(x: number = optional)"
+      ],
+      "answerIndex": 0,
+      "explanation": "Необязательный параметр обозначается ? после имени."
+    },
+    {
+      "id": "typescript.067",
+      "category": "typescript",
+      "prompt": "Что означает параметр name: string = 'Guest'?",
+      "options": [
+        "У параметра есть значение по умолчанию",
+        "Параметр всегда обязателен",
+        "Это generic"
+      ],
+      "answerIndex": 0,
+      "explanation": "Параметр со значением по умолчанию можно не передавать."
+    },
+    {
+      "id": "typescript.068",
+      "category": "typescript",
+      "prompt": "Что описывает Record<string, number>?",
+      "options": [
+        "Объект с ключами-строками и числовыми значениями",
+        "Массив строк",
+        "Функцию из строки в число во время выполнения"
+      ],
+      "answerIndex": 0,
+      "explanation": "Record задаёт тип отображения ключей на значения."
+    },
+    {
+      "id": "typescript.069",
+      "category": "typescript",
+      "prompt": "Что делает as const?",
+      "options": [
+        "Сохраняет максимально узкие literal-типы и readonly",
+        "Запускает функцию",
+        "Преобразует значение в JSON"
+      ],
+      "answerIndex": 0,
+      "explanation": "const assertion фиксирует литеральные значения в типе."
+    },
+    {
+      "id": "typescript.070",
+      "category": "typescript",
+      "prompt": "Что такое type assertion `value as User`?",
+      "options": [
+        "Подсказка компилятору о типе без runtime-проверки",
+        "Проверка объекта при запуске",
+        "Копирование в новый объект"
+      ],
+      "answerIndex": 0,
+      "explanation": "Assertion не валидирует данные во время выполнения."
+    },
+    {
+      "id": "typescript.071",
+      "category": "typescript",
+      "prompt": "Как типизировать параметр события ввода в React?",
+      "options": [
+        "React.ChangeEvent<HTMLInputElement>",
+        "React.InputEvent<HTMLPage>",
+        "DOM.ReactInput"
+      ],
+      "answerIndex": 0,
+      "explanation": "ChangeEvent параметризуется конкретным HTML-элементом."
+    },
+    {
+      "id": "typescript.072",
+      "category": "typescript",
+      "prompt": "Что позволяет `satisfies`?",
+      "options": [
+        "Проверить соответствие типу, сохранив более точный выведенный тип",
+        "Преобразовать объект в другой во время выполнения",
+        "Отключить ошибки типов"
+      ],
+      "answerIndex": 0,
+      "explanation": "satisfies проверяет совместимость, не заменяя inferred type на целевой."
+    },
+    {
+      "id": "typescript.073",
+      "category": "typescript",
+      "prompt": "Что означает `implements` в объявлении класса?",
+      "options": [
+        "Класс проверяется на соответствие интерфейсу",
+        "Интерфейс наследуется от объекта",
+        "Класс запускает интерфейс"
+      ],
+      "answerIndex": 0,
+      "explanation": "implements проверяет структурную совместимость класса."
+    },
+    {
+      "id": "typescript.074",
+      "category": "typescript",
+      "prompt": "Что означает `extends` в generic `T extends string`?",
+      "options": [
+        "Ограничивает T типами, совместимыми со string",
+        "Создаёт наследование объекта во время выполнения",
+        "Делает T необязательным"
+      ],
+      "answerIndex": 0,
+      "explanation": "Это constraint для допустимых аргументов типа."
+    },
+    {
+      "id": "typescript.075",
+      "category": "typescript",
+      "prompt": "Зачем нужен файл tsconfig.json?",
+      "options": [
+        "Настраивает компилятор TypeScript для проекта",
+        "Хранит npm-пароль",
+        "Описывает CSS"
+      ],
+      "answerIndex": 0,
+      "explanation": "В нём задаются compiler options и файлы проекта."
+    },
+    {
+      "id": "typescript.076",
+      "category": "typescript",
+      "prompt": "Что делает `noImplicitAny`?",
+      "options": [
+        "Выдаёт ошибку для неявно выведенного any",
+        "Запрещает any везде без исключений",
+        "Удаляет типы из сборки"
+      ],
+      "answerIndex": 0,
+      "explanation": "Параметр требует явно указать тип, если inference дал бы any."
+    },
+    {
+      "id": "typescript.077",
+      "category": "typescript",
+      "prompt": "Что делает `strict` в tsconfig?",
+      "options": [
+        "Включает набор строгих проверок типов",
+        "Минифицирует сборку",
+        "Запрещает JavaScript"
+      ],
+      "answerIndex": 0,
+      "explanation": "strict включает семейство полезных строгих проверок."
+    },
+    {
+      "id": "typescript.078",
+      "category": "typescript",
+      "prompt": "Что описывает `Promise<User>`?",
+      "options": [
+        "Асинхронный результат типа User",
+        "Массив пользователей",
+        "Функцию без результата"
+      ],
+      "answerIndex": 0,
+      "explanation": "Promise<User> разрешается значением User."
+    },
+    {
+      "id": "typescript.079",
+      "category": "typescript",
+      "prompt": "Почему JSON.parse обычно требует проверки типа?",
+      "options": [
+        "Результат внешних данных не проверен компилятором",
+        "JSON всегда возвращает строку",
+        "TypeScript не поддерживает JSON"
+      ],
+      "answerIndex": 0,
+      "explanation": "Статические типы не подтверждают форму данных, пришедших во время выполнения."
+    },
+    {
+      "id": "typescript.080",
+      "category": "typescript",
+      "prompt": "Как типизировать callback без параметров и результата?",
+      "options": [
+        "() => void",
+        "void => ()",
+        "Callback<void>"
+      ],
+      "answerIndex": 0,
+      "explanation": "Функциональный тип записывается через список параметров и стрелку."
+    },
+    {
+      "id": "web.081",
+      "category": "web",
+      "prompt": "Какой тег задаёт основной заголовок страницы?",
+      "options": [
+        "<h1>",
+        "<head>",
+        "<title>"
+      ],
+      "answerIndex": 0,
+      "explanation": "h1 — заголовок содержимого; title задаёт имя вкладки."
+    },
+    {
+      "id": "web.082",
+      "category": "web",
+      "prompt": "Для чего предназначен элемент <main>?",
+      "options": [
+        "Основное уникальное содержимое страницы",
+        "Навигация сайта",
+        "Подвал страницы"
+      ],
+      "answerIndex": 0,
+      "explanation": "main обозначает доминирующее содержимое документа."
+    },
+    {
+      "id": "web.083",
+      "category": "web",
+      "prompt": "Как связать label с input?",
+      "options": [
+        "Совпадающий for у label и id у input",
+        "Вложить label в title",
+        "Добавить name к label и class к input"
+      ],
+      "answerIndex": 0,
+      "explanation": "Атрибут for связывает подпись с id элемента управления."
+    },
+    {
+      "id": "web.084",
+      "category": "web",
+      "prompt": "Что добавить изображению для доступного описания?",
+      "options": [
+        "Осмысленный alt",
+        "Только title у страницы",
+        "role='image' без текста"
+      ],
+      "answerIndex": 0,
+      "explanation": "alt передаёт текстовую альтернативу изображения."
+    },
+    {
+      "id": "web.085",
+      "category": "web",
+      "prompt": "Какой атрибут задаёт URL ссылки?",
+      "options": [
+        "href",
+        "src",
+        "action"
+      ],
+      "answerIndex": 0,
+      "explanation": "У элемента a адрес назначения указывается в href."
+    },
+    {
+      "id": "web.086",
+      "category": "web",
+      "prompt": "Какой элемент предназначен для отправки формы?",
+      "options": [
+        "<button type='submit'>",
+        "<span role='send'>",
+        "<label>"
+      ],
+      "answerIndex": 0,
+      "explanation": "Кнопка submit отправляет форму при корректной структуре."
+    },
+    {
+      "id": "web.087",
+      "category": "web",
+      "prompt": "Что задаёт атрибут `name` у input при отправке формы?",
+      "options": [
+        "Ключ поля в отправляемых данных",
+        "Цвет поля",
+        "Подпись для экранного диктора"
+      ],
+      "answerIndex": 0,
+      "explanation": "Имя поля используется как ключ form data."
+    },
+    {
+      "id": "web.088",
+      "category": "web",
+      "prompt": "Как сделать документ адаптивным для ширины мобильного экрана?",
+      "options": [
+        "meta viewport с width=device-width",
+        "Установить body width: 5000px",
+        "Удалить charset"
+      ],
+      "answerIndex": 0,
+      "explanation": "Viewport meta задаёт ширину layout viewport устройства."
+    },
+    {
+      "id": "web.089",
+      "category": "web",
+      "prompt": "Как подключить внешний CSS-файл?",
+      "options": [
+        "<link rel='stylesheet' href='style.css'>",
+        "<script src='style.css'>",
+        "<css href='style.css'>"
+      ],
+      "answerIndex": 0,
+      "explanation": "Таблица стилей подключается элементом link в head."
+    },
+    {
+      "id": "web.090",
+      "category": "web",
+      "prompt": "Какой CSS-селектор выбирает элемент с id=card?",
+      "options": [
+        ".card",
+        "#card",
+        "card()"
+      ],
+      "answerIndex": 1,
+      "explanation": "В CSS решётка обозначает id-селектор."
+    },
+    {
+      "id": "web.091",
+      "category": "web",
+      "prompt": "Какой селектор выбирает элементы с классом card?",
+      "options": [
+        "#card",
+        ".card",
+        "*card"
+      ],
+      "answerIndex": 1,
+      "explanation": "Точка обозначает class-селектор."
+    },
+    {
+      "id": "web.092",
+      "category": "web",
+      "prompt": "Как расположить flex-элементы в колонку?",
+      "options": [
+        "flex-direction: column",
+        "display: column",
+        "align: vertical"
+      ],
+      "answerIndex": 0,
+      "explanation": "flex-direction задаёт главную ось Flexbox."
+    },
+    {
+      "id": "web.093",
+      "category": "web",
+      "prompt": "Что делает `justify-content` во flex-контейнере?",
+      "options": [
+        "Распределяет элементы вдоль главной оси",
+        "Задаёт шрифт",
+        "Меняет порядок HTML-узлов"
+      ],
+      "answerIndex": 0,
+      "explanation": "В Flexbox justify-content работает вдоль main axis."
+    },
+    {
+      "id": "web.094",
+      "category": "web",
+      "prompt": "Что делает `align-items` во flex-контейнере?",
+      "options": [
+        "Выравнивает элементы по поперечной оси",
+        "Устанавливает ширину страницы",
+        "Выравнивает текст только внутри кнопок"
+      ],
+      "answerIndex": 0,
+      "explanation": "align-items управляет выравниванием по cross axis."
+    },
+    {
+      "id": "web.095",
+      "category": "web",
+      "prompt": "Для чего в CSS нужен box-sizing: border-box?",
+      "options": [
+        "Включает padding и border в заданные width/height",
+        "Удаляет рамки",
+        "Скрывает переполнение"
+      ],
+      "answerIndex": 0,
+      "explanation": "Размер border-box включает content, padding и border."
+    },
+    {
+      "id": "web.096",
+      "category": "web",
+      "prompt": "Как объявить CSS-переменную?",
+      "options": [
+        "--brand-color: teal;",
+        "$brand-color: teal;",
+        "var brand-color = teal;"
+      ],
+      "answerIndex": 0,
+      "explanation": "Пользовательские свойства CSS начинаются с двух дефисов."
+    },
+    {
+      "id": "web.097",
+      "category": "web",
+      "prompt": "Как применить CSS custom property?",
+      "options": [
+        "color: var(--brand-color)",
+        "color: $brand-color",
+        "color: custom(brand-color)"
+      ],
+      "answerIndex": 0,
+      "explanation": "Функция var() подставляет значение custom property."
+    },
+    {
+      "id": "web.098",
+      "category": "web",
+      "prompt": "Что делает media query `@media (max-width: 600px)`?",
+      "options": [
+        "Применяет правила при ширине viewport до 600px",
+        "Меняет разрешение экрана",
+        "Загружает мобильный HTML"
+      ],
+      "answerIndex": 0,
+      "explanation": "Media query условно применяет стили в зависимости от характеристик устройства."
+    },
+    {
+      "id": "web.099",
+      "category": "web",
+      "prompt": "Что обычно означает подход mobile-first?",
+      "options": [
+        "Сначала базовые стили для узкого экрана, затем расширение через min-width",
+        "Сайт работает только на телефоне",
+        "Вёрстка без медиазапросов"
+      ],
+      "answerIndex": 0,
+      "explanation": "Mobile-first начинает с ограниченного пространства и прогрессивно добавляет layout."
+    },
+    {
+      "id": "web.100",
+      "category": "web",
+      "prompt": "Для чего нужен `position: relative`?",
+      "options": [
+        "Создаёт позиционируемую область и сохраняет место элемента в потоке",
+        "Удаляет элемент из DOM",
+        "Фиксирует элемент относительно окна"
+      ],
+      "answerIndex": 0,
+      "explanation": "Абсолютно позиционированный потомок может использовать такого предка как containing block."
+    },
+    {
+      "id": "web.101",
+      "category": "web",
+      "prompt": "Относительно чего позиционируется `position: fixed`?",
+      "options": [
+        "Обычно относительно viewport",
+        "Только относительно родителя",
+        "Относительно размера шрифта"
+      ],
+      "answerIndex": 0,
+      "explanation": "fixed-элемент обычно закреплён относительно окна просмотра."
+    },
+    {
+      "id": "web.102",
+      "category": "web",
+      "prompt": "Что делает `display: none`?",
+      "options": [
+        "Убирает элемент из layout и отображения",
+        "Делает элемент прозрачным, сохраняя место",
+        "Скрывает только текст"
+      ],
+      "answerIndex": 0,
+      "explanation": "Элемент не участвует в раскладке; для невидимости с сохранением места есть другие способы."
+    },
+    {
+      "id": "web.103",
+      "category": "web",
+      "prompt": "Какой атрибут указывает язык содержимого HTML-документа?",
+      "options": [
+        "lang у html",
+        "language у body",
+        "locale у head"
+      ],
+      "answerIndex": 0,
+      "explanation": "Например, <html lang='ru'> помогает браузеру и assistive technology."
+    },
+    {
+      "id": "web.104",
+      "category": "web",
+      "prompt": "Что означает HTTP-статус 404?",
+      "options": [
+        "Ресурс не найден",
+        "Успешное создание",
+        "Сервер перенаправляет навсегда"
+      ],
+      "answerIndex": 0,
+      "explanation": "404 Not Found сообщает, что запрошенный ресурс не найден."
+    },
+    {
+      "id": "web.105",
+      "category": "web",
+      "prompt": "Что обычно означает HTTP-статус 200?",
+      "options": [
+        "Запрос успешно обработан",
+        "Нет доступа",
+        "Ресурс навсегда перемещён"
+      ],
+      "answerIndex": 0,
+      "explanation": "200 OK — успешный ответ в соответствующем контексте."
+    },
+    {
+      "id": "web.106",
+      "category": "web",
+      "prompt": "Какой HTTP-метод обычно читают как безопасный запрос?",
+      "options": [
+        "GET",
+        "DELETE",
+        "PATCH"
+      ],
+      "answerIndex": 0,
+      "explanation": "GET предназначен для получения представления ресурса без изменения его состояния."
+    },
+    {
+      "id": "web.107",
+      "category": "web",
+      "prompt": "Для чего обычно используют POST?",
+      "options": [
+        "Передать данные для обработки/создания ресурса",
+        "Только получить статический файл",
+        "Закрыть TCP-соединение"
+      ],
+      "answerIndex": 0,
+      "explanation": "POST отправляет представление данных для обработки целевым ресурсом."
+    },
+    {
+      "id": "web.108",
+      "category": "web",
+      "prompt": "Что делает HTTPS поверх HTTP?",
+      "options": [
+        "Защищает соединение TLS шифрованием и проверкой сервера",
+        "Скрывает сайт от поисковых систем",
+        "Гарантирует, что контент правдив"
+      ],
+      "answerIndex": 0,
+      "explanation": "TLS защищает канал, но сам по себе не доказывает достоверность содержимого сайта."
+    },
+    {
+      "id": "web.109",
+      "category": "web",
+      "prompt": "Что хранит cookie?",
+      "options": [
+        "Небольшие данные, которыми браузер управляет для сайта",
+        "Только изображения",
+        "HTML-шаблон всей страницы"
+      ],
+      "answerIndex": 0,
+      "explanation": "Cookie часто применяют для состояния с ограничениями и атрибутами безопасности."
+    },
+    {
+      "id": "web.110",
+      "category": "web",
+      "prompt": "Для чего нужен атрибут `defer` у внешнего script?",
+      "options": [
+        "Загрузить скрипт параллельно и выполнить после разбора HTML",
+        "Встроить скрипт в CSS",
+        "Запретить выполнение скрипта"
+      ],
+      "answerIndex": 0,
+      "explanation": "defer откладывает выполнение до разбора документа и сохраняет порядок defer-скриптов."
+    },
+    {
+      "id": "web.111",
+      "category": "web",
+      "prompt": "Какой storage переживает закрытие вкладки обычно дольше?",
+      "options": [
+        "localStorage",
+        "sessionStorage",
+        "Переменная let в скрипте"
+      ],
+      "answerIndex": 0,
+      "explanation": "localStorage сохраняется между сессиями браузера, пока не удалён."
+    },
+    {
+      "id": "web.112",
+      "category": "web",
+      "prompt": "Когда очищается sessionStorage?",
+      "options": [
+        "Обычно при завершении сессии вкладки",
+        "Каждые 5 секунд",
+        "Только после перезагрузки компьютера"
+      ],
+      "answerIndex": 0,
+      "explanation": "sessionStorage привязан к browsing context и обычно очищается при его закрытии."
+    },
+    {
+      "id": "web.113",
+      "category": "web",
+      "prompt": "Что такое CORS?",
+      "options": [
+        "Механизм контроля междоменных запросов браузером",
+        "Формат CSS",
+        "Система сжатия изображений"
+      ],
+      "answerIndex": 0,
+      "explanation": "Cross-Origin Resource Sharing использует HTTP-заголовки для разрешения доступа."
+    },
+    {
+      "id": "web.114",
+      "category": "web",
+      "prompt": "Что описывает семантическая HTML-разметка?",
+      "options": [
+        "Смысл и роль элементов, а не только их внешний вид",
+        "Только цвета сайта",
+        "Скорость сети"
+      ],
+      "answerIndex": 0,
+      "explanation": "Семантические элементы улучшают структуру, доступность и понимание документа."
+    },
+    {
+      "id": "web.115",
+      "category": "web",
+      "prompt": "Для чего нужен `<nav>`?",
+      "options": [
+        "Для блока основных навигационных ссылок",
+        "Для встраивания видео",
+        "Для создания таблицы"
+      ],
+      "answerIndex": 0,
+      "explanation": "nav обозначает крупный раздел навигации."
+    },
+    {
+      "id": "web.116",
+      "category": "web",
+      "prompt": "Как правильно связать сообщение ошибки с полем для доступности?",
+      "options": [
+        "Добавить текст ошибки и связать через aria-describedby",
+        "Показать только красную рамку",
+        "Изменить placeholder и больше ничего"
+      ],
+      "answerIndex": 0,
+      "explanation": "Связанный текст помогает screen reader объявить ошибку вместе с полем."
+    },
+    {
+      "id": "web.117",
+      "category": "web",
+      "prompt": "Что означает клавиатурный фокус?",
+      "options": [
+        "Элемент, который сейчас получает ввод с клавиатуры",
+        "Выбранный цвет темы",
+        "Увеличение масштаба браузера"
+      ],
+      "answerIndex": 0,
+      "explanation": "Фокус должен быть видимым и перемещаться логичным порядком."
+    },
+    {
+      "id": "web.118",
+      "category": "web",
+      "prompt": "Что помогает проверить контраст текста?",
+      "options": [
+        "Сравнение яркости текста и фона по рекомендациям WCAG",
+        "Проверка длины URL",
+        "Подсчёт DOM-узлов"
+      ],
+      "answerIndex": 0,
+      "explanation": "Достаточный контраст важен для читаемости; критерии WCAG задают пороги."
+    },
+    {
+      "id": "web.119",
+      "category": "web",
+      "prompt": "Что такое responsive design?",
+      "options": [
+        "Адаптация интерфейса к разным viewport и устройствам",
+        "Страница только с анимацией",
+        "Сайт, который всегда перезагружается"
+      ],
+      "answerIndex": 0,
+      "explanation": "Responsive layout использует гибкие размеры и breakpoints."
+    },
+    {
+      "id": "web.120",
+      "category": "web",
+      "prompt": "Почему не стоит использовать `<div>` вместо кнопки?",
+      "options": [
+        "У кнопки есть нативная клавиатурная и семантическая функциональность",
+        "div нельзя стилизовать",
+        "div всегда медленнее"
+      ],
+      "answerIndex": 0,
+      "explanation": "Нативные элементы управления доступны клавиатуре и assistive technology по умолчанию."
+    },
+    {
+      "id": "web.121",
+      "category": "web",
+      "prompt": "Что делает `loading='lazy'` у изображения?",
+      "options": [
+        "Откладывает загрузку изображения до приближения к viewport",
+        "Уменьшает файл без потери качества",
+        "Запрещает загрузку изображения"
+      ],
+      "answerIndex": 0,
+      "explanation": "Lazy loading может снизить начальную работу страницы для внеэкранных изображений."
+    },
+    {
+      "id": "web.122",
+      "category": "web",
+      "prompt": "Что обозначает критический путь рендеринга?",
+      "options": [
+        "Шаги браузера от получения ресурсов до отображения пикселей",
+        "Маршрут мыши по странице",
+        "Список HTTP-ошибок"
+      ],
+      "answerIndex": 0,
+      "explanation": "На рендеринг влияют HTML, CSS, JavaScript и построение layout/paint."
+    },
+    {
+      "id": "web.123",
+      "category": "web",
+      "prompt": "Что стоит сделать с секретным API-ключом в frontend-коде?",
+      "options": [
+        "Не помещать секрет: клиентский код доступен пользователю",
+        "Закодировать его в Base64",
+        "Спрятать в CSS"
+      ],
+      "answerIndex": 0,
+      "explanation": "Любые данные, отправленные браузеру, можно извлечь; секрет хранится на сервере."
+    },
+    {
+      "id": "web.124",
+      "category": "web",
+      "prompt": "Что обычно делает CDN?",
+      "options": [
+        "Доставляет кэшированный контент с географически близких узлов",
+        "Заменяет базу данных",
+        "Пишет HTML вместо разработчика"
+      ],
+      "answerIndex": 0,
+      "explanation": "Content Delivery Network ускоряет доставку статических ресурсов."
+    }
+  ]
+}

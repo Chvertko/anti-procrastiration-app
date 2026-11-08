@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">FocusStep</string>
+    <string name="accessibility_service_name">FocusStep: пауза перед приложениями</string>
+    <string name="accessibility_service_description">Замечает открытие приложений, выбранных пользователем, чтобы показать короткое задание или таймер ожидания. Не читает содержимое экранов.</string>
+</resources>
