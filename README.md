@@ -28,6 +28,8 @@ Steps:
 Alternatively, in PowerShell from the project folder:
 
 ```powershell
+$env:ANDROID_HOME = (Join-Path $PWD ".android-sdk")
+$env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
 .\gradlew.bat :app:assembleDebug
 ```
 
@@ -55,7 +57,7 @@ Copy `app-debug.apk` to the phone, open it from Files, and allow installation fr
 
 1. Open **FocusStep**.
 2. Open **Настройки** and choose the apps to monitor (for example, Instagram).
-3. Return to **Сегодня** and tap **Включить защиту**.
+3. Return to **Сегодня**, set a PIN (you can ask a trusted person to choose it), then tap **Включить защиту**.
 4. Review the disclosure and tap **Понятно, открыть настройки**.
 5. In Android's Accessibility settings, enable **FocusStep: пауза перед приложениями** and confirm the system warning.
 6. Open a selected app. The question gate should appear. Answer correctly, or choose the wait timer; after the timer, tap the continue button.

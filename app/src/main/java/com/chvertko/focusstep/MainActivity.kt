@@ -91,7 +91,15 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(if (serviceEnabled && apps.isNotEmpty()) "Защита активна" else "Нужна настройка", style = MaterialTheme.typography.titleLarge)
                 Text(if (serviceEnabled) "Сервис включён. Выбрано приложений: ${apps.size}." else "Выбери приложения и включи доступ FocusStep в настройках специальных возможностей.")
-                Button(onClick = { if (apps.isEmpty()) onSettings() else showDisclosure = true }, enabled = !serviceEnabled) { Text(if (apps.isEmpty()) "Выбрать приложения" else "Включить защиту") }
+                Button(onClick = {
+                    when {
+                        apps.isEmpty() -> onSettings()
+                        !PinCode.isSet(context) -> showPinDialog = true
+                        else -> showDisclosure = true
+                    }
+                }, enabled = !serviceEnabled) {
+                    Text(when { apps.isEmpty() -> "Выбрать приложения"; !PinCode.isSet(context) -> "Задать PIN"; else -> "Включить защиту" })
+                }
                 if (serviceEnabled) Text("Отключение доступно в системных настройках Android.", style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -211,7 +219,7 @@ private fun PinSetupDialog(onDone: () -> Unit, onCancel: () -> Unit) {
         title = { Text("PIN защитных настроек") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("PIN затрудняет импульсивные изменения, но не мешает отключить сервис в Android или удалить приложение.")
+                Text("Попроси доверенного человека придумать PIN и ввести его здесь. Он затрудняет импульсивные изменения, но не мешает отключить сервис в Android или удалить приложение.")
                 if (PinCode.isSet(context)) OutlinedTextField(oldPin, { oldPin = it.filter { c -> c.isDigit() }.take(12) }, label = { Text("Текущий PIN") })
                 OutlinedTextField(pin, { pin = it.filter { c -> c.isDigit() }.take(12) }, label = { Text("Новый PIN (4–12 цифр)") })
                 OutlinedTextField(confirm, { confirm = it.filter { c -> c.isDigit() }.take(12) }, label = { Text("Повтори PIN") })
