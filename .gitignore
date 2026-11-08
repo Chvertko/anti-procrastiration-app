@@ -1,5 +1,9 @@
 .gradle/
 .android-sdk/
+.android-avd/
+.android-emulator/
+.android-user/
+.android/
 local.properties
 .idea/
 *.iml
