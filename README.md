@@ -98,3 +98,4 @@ Supported categories: `javascript`, `typescript`, `web`. A pack must contain 1â€
 ## Repository notes
 
 The GitHub Actions workflow builds a debug APK on pushes and manual runs, then publishes it as the `focusstep-debug-apk` workflow artifact. Google Play publication is not configured.
+# anti-procrastiration-app
