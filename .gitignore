@@ -1,8 +1,11 @@
 .gradle/
+.gradle-user/
+.kotlin/
 .android-sdk/
 .android-avd/
 .android-emulator/
 .android-user/
+.android-user-build/
 .android/
 local.properties
 .idea/

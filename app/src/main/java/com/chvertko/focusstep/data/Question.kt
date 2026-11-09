@@ -70,7 +70,7 @@ object QuestionRepository {
             java.nio.file.Files.move(
                 temporary.toPath(), destination.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING,
             )
-            parsed.size
+            return parsed.size
         } finally {
             connection.disconnect()
         }
