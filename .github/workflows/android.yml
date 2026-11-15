@@ -23,10 +23,12 @@ jobs:
         with:
           gradle-version: '8.13'
       - name: Add Firebase config when configured
-        if: ${{ secrets.FIREBASE_ANDROID_CONFIG_JSON != '' }}
         env:
           FIREBASE_ANDROID_CONFIG_JSON: ${{ secrets.FIREBASE_ANDROID_CONFIG_JSON }}
-        run: printf '%s' "$FIREBASE_ANDROID_CONFIG_JSON" > app/google-services.json
+        run: |
+          if [ -n "$FIREBASE_ANDROID_CONFIG_JSON" ]; then
+            printf '%s' "$FIREBASE_ANDROID_CONFIG_JSON" > app/google-services.json
+          fi
       - name: Build debug APK
         run: gradle :app:assembleDebug
       - uses: actions/upload-artifact@v4
@@ -52,10 +54,12 @@ jobs:
         with:
           gradle-version: '8.13'
       - name: Add Firebase config when configured
-        if: ${{ secrets.FIREBASE_ANDROID_CONFIG_JSON != '' }}
         env:
           FIREBASE_ANDROID_CONFIG_JSON: ${{ secrets.FIREBASE_ANDROID_CONFIG_JSON }}
-        run: printf '%s' "$FIREBASE_ANDROID_CONFIG_JSON" > app/google-services.json
+        run: |
+          if [ -n "$FIREBASE_ANDROID_CONFIG_JSON" ]; then
+            printf '%s' "$FIREBASE_ANDROID_CONFIG_JSON" > app/google-services.json
+          fi
       - name: Validate beta signing secrets
         env:
           BETA_KEYSTORE_BASE64: ${{ secrets.BETA_KEYSTORE_BASE64 }}
