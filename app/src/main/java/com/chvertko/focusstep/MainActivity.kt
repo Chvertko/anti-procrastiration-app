@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
+        Telemetry.applyConsent(this)
         setContent { FocusStepApp(resumeState.intValue) }
     }
 
@@ -57,6 +58,7 @@ private fun FocusStepApp(refreshKey: Int) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("home" to "Сегодня", "questions" to "Вопросы", "settings" to "Настройки").forEach { (key, label) ->
                         FilterChip(selected = page == key, onClick = {
+                            Telemetry.event(context, "navigation_selected", mapOf("destination" to key))
                             if (key == "settings" && PinCode.isSet(context)) verifyPin = true else page = key
                         }, label = { Text(label) })
                     }
@@ -109,8 +111,8 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit) {
                 Text("Попыток открыть выбранные приложения: ${stats.attempts}")
                 Text("Вопросов решено: ${stats.completed}")
                 Text("Паузы ожидания завершены: ${stats.waits}")
-                Text("Время на заданиях: ${stats.seconds / 60} мин")
-                Text("Время считается внутри FocusStep; это не оценка экранного времени, сэкономленного в других приложениях.", style = MaterialTheme.typography.bodySmall)
+                Text("Экранного времени сэкономлено: ${stats.savedSeconds / 60} мин")
+                Text("Оценка времени, когда ты отказался от открытия выбранного приложения после паузы.", style = MaterialTheme.typography.bodySmall)
             }
         }
         OutlinedButton(onClick = { showPinDialog = true }) { Text(if (PinCode.isSet(context)) "Изменить PIN" else "Задать PIN для защитных настроек") }
@@ -163,19 +165,41 @@ private fun SettingsPage() {
     var busy by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf(AppPrefs.selectedApps(context)) }
     val apps = remember { launcherApps(context) }
+    var appSearch by remember { mutableStateOf("") }
+    var telemetryEnabled by remember { mutableStateOf(Telemetry.isEnabled(context)) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Правила", style = MaterialTheme.typography.headlineSmall)
+        if (BuildConfig.FIREBASE_CONFIGURED) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Диагностика beta")
+                    Text("Отправлять события использования и отчёты о сбоях. Названия приложений, ответы и PIN не отправляются.", style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(checked = telemetryEnabled, onCheckedChange = { enabled ->
+                    telemetryEnabled = enabled
+                    Telemetry.setEnabled(context, enabled)
+                })
+            }
+        } else {
+            Text("Сбор метрик пока не настроен: Firebase конфигурация не добавлена в эту сборку.", style = MaterialTheme.typography.bodySmall)
+        }
+        HorizontalDivider()
         Text("Выбери приложения. При их открытии появится вопрос или таймер.")
-        apps.forEach { app ->
+        OutlinedTextField(appSearch, { appSearch = it }, label = { Text("Поиск приложений") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        val filteredApps = apps.filter { it.second.contains(appSearch, ignoreCase = true) || it.first.contains(appSearch, ignoreCase = true) }
+        if (filteredApps.isEmpty()) Text("Приложения не найдены.", style = MaterialTheme.typography.bodySmall)
+        filteredApps.forEach { app ->
             val checked = app.first in selected
             Row(Modifier.fillMaxWidth().clickable {
                 selected = if (checked) selected - app.first else selected + app.first
                 AppPrefs.setSelectedApps(context, selected)
+                Telemetry.event(context, "monitored_app_selection_changed", mapOf("selected" to (!checked).toString(), "selected_count" to selected.size.toString()))
             }.padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = checked, onCheckedChange = { value ->
                     selected = if (value) selected + app.first else selected - app.first
                     AppPrefs.setSelectedApps(context, selected)
+                    Telemetry.event(context, "monitored_app_selection_changed", mapOf("selected" to value.toString(), "selected_count" to selected.size.toString()))
                 })
                 Column { Text(app.second); Text(app.first, style = MaterialTheme.typography.labelSmall) }
             }
@@ -194,12 +218,18 @@ private fun SettingsPage() {
             Thread {
                 try {
                     val count = QuestionRepository.updateFromHttps(context, address)
+                    Telemetry.event(context, "question_pack_import", mapOf("result" to "success", "question_count" to count.toString()))
                     mainHandler.post { message = "Загружено вопросов: $count"; busy = false }
-                } catch (e: Exception) { mainHandler.post { message = e.message ?: "Не удалось загрузить JSON."; busy = false } }
+                } catch (e: Exception) {
+                    Telemetry.event(context, "question_pack_import", mapOf("result" to "failure"))
+                    Telemetry.error(context, "question_pack_import", e)
+                    mainHandler.post { message = e.message ?: "Не удалось загрузить JSON."; busy = false }
+                }
             }.start()
         }) { Text(if (busy) "Загрузка…" else "Обновить каталог") }
         TextButton(onClick = {
             QuestionRepository.resetToBundled(context)
+            Telemetry.event(context, "question_pack_reset")
             message = "Восстановлен встроенный каталог вопросов."
         }) { Text("Вернуть встроенный каталог") }
         if (message.isNotBlank()) Text(message)

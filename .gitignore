@@ -16,5 +16,6 @@ app/build/
 *.aab
 *.jks
 *.keystore
+app/google-services.json
 captures/
 .DS_Store

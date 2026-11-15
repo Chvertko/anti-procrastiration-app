@@ -30,7 +30,7 @@ object AppPrefs {
         p.edit().putInt("stat_attempts", p.getInt("stat_attempts", 0) + 1).apply()
     }
 
-    fun recordOutcome(context: Context, completed: Boolean, seconds: Int) {
+    fun recordOutcome(context: Context, completed: Boolean, savedSeconds: Int) {
         val p = prefs(context)
         val today = LocalDate.now().toString()
         if (p.getString("stat_day", "") != today) {
@@ -39,15 +39,15 @@ object AppPrefs {
         p.edit()
             .putInt("stat_completed", p.getInt("stat_completed", 0) + if (completed) 1 else 0)
             .putInt("stat_waits", p.getInt("stat_waits", 0) + if (completed) 0 else 1)
-            .putInt("stat_seconds", p.getInt("stat_seconds", 0) + seconds)
+            .putInt("stat_saved_seconds", p.getInt("stat_saved_seconds", 0) + savedSeconds.coerceAtLeast(0))
             .apply()
     }
 
     fun dailyStats(context: Context): DailyStats {
         val p = prefs(context)
         if (p.getString("stat_day", "") != LocalDate.now().toString()) return DailyStats(0, 0, 0, 0)
-        return DailyStats(p.getInt("stat_attempts", 0), p.getInt("stat_completed", 0), p.getInt("stat_waits", 0), p.getInt("stat_seconds", 0))
+        return DailyStats(p.getInt("stat_attempts", 0), p.getInt("stat_completed", 0), p.getInt("stat_waits", 0), p.getInt("stat_saved_seconds", 0))
     }
 }
 
-data class DailyStats(val attempts: Int, val completed: Int, val waits: Int, val seconds: Int)
+data class DailyStats(val attempts: Int, val completed: Int, val waits: Int, val savedSeconds: Int)

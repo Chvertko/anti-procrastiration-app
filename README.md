@@ -35,6 +35,28 @@ $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
 
 The APK is produced at `app\build\outputs\apk\debug\app-debug.apk`.
 
+## Download a beta APK from GitHub
+
+The **Android build** workflow builds a debug APK on pushes to `main`/`master` and on manual runs. In GitHub open **Actions → Android build → latest successful run → Artifacts → focusstep-beta-apk** and download the ZIP. The artifact is retained for 30 days.
+
+For a stable download link, push a tag named `beta-*` (for example `beta-0.2.0`). The workflow builds a signed release APK and attaches it to a prerelease under **Releases**. Before the first beta tag, configure these repository Actions secrets using one persistent beta signing key:
+
+- `BETA_KEYSTORE_BASE64`: base64-encoded `.jks` file;
+- `BETA_KEYSTORE_PASSWORD`, `BETA_KEY_ALIAS`, `BETA_KEY_PASSWORD`.
+
+Create the key once with `keytool -genkeypair -v -keystore focusstep-beta.jks -keyalg RSA -keysize 2048 -validity 10000 -alias focusstep-beta`, then convert it to base64 and store the result as the secret. Keep a backup of the keystore. Every beta release must use the same key so Android can update the installed app without uninstalling it. A release tag intentionally fails if these secrets are missing. Use a private repository or private releases if the APK should only be accessible to you.
+
+## Optional beta diagnostics (Firebase)
+
+The app integrates Firebase Analytics and Crashlytics, but telemetry stays off until the user enables **Настройки → Диагностика beta**. To activate it:
+
+1. Create a Firebase project, add an Android app with package name `com.chvertko.focusstep`, and enable Google Analytics and Crashlytics in Firebase Console.
+2. For local builds, put the downloaded `google-services.json` in `app/` (this file is ignored by Git).
+3. For GitHub Actions builds, add the full JSON file contents as the `FIREBASE_ANDROID_CONFIG_JSON` repository Actions secret. Builds without this config still work, but diagnostics are omitted and the app explains that metrics are not configured.
+4. Install a Firebase-configured build, open **Настройки**, and turn on **Диагностика beta**. Reports appear in Firebase Analytics and Crashlytics after the device has network access; crash reports are typically sent when the app next starts.
+
+Tracked events include navigation, monitored-app selection counts (never package names), question answer correctness (never answer text), wait/return/continue actions, and question-pack import success/failure. Firebase also receives technical crash data when consent is enabled. Do not add user text, question content, app package names, or PIN data to analytics or exception reports. Update the privacy notice before sharing the beta with other testers.
+
 ## Install on a phone
 
 ### USB / ADB
@@ -90,9 +112,9 @@ Supported categories: `javascript`, `typescript`, `web`. A pack must contain 1�
 ## Current MVP boundaries
 
 - Question, answer, timer, and outcome data are local.
-- The daily view reports completed attempts, completed questions, completed waits, and time spent in FocusStep. It does not claim to measure screen time saved in other apps.
+- The daily view reports local outcomes and an estimate of avoided screen time. It does not measure system-wide app usage.
 - The timer continues against device wall-clock time if the gate screen is closed; reopening the selected app returns to the current wait state.
-- The MVP has no code execution, account, server, ads, or cloud analytics.
+- The MVP has no code execution, account, or ads. Optional Firebase analytics and crash reporting are off until the user opts in.
 - Accessibility API behavior varies across devices and Android versions. Background activity launches may be restricted; if a phone blocks the gate, use the prototype results to revise the interception approach.
 
 ## Repository notes

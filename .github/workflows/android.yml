@@ -3,11 +3,14 @@ name: Android build
 on:
   push:
     branches: [main, master]
+    tags: ['beta-*']
   pull_request:
   workflow_dispatch:
 
 jobs:
   debug-apk:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +22,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+      - name: Add Firebase config when configured
+        if: ${{ secrets.FIREBASE_ANDROID_CONFIG_JSON != '' }}
+        env:
+          FIREBASE_ANDROID_CONFIG_JSON: ${{ secrets.FIREBASE_ANDROID_CONFIG_JSON }}
+        run: printf '%s' "$FIREBASE_ANDROID_CONFIG_JSON" > app/google-services.json
       - name: Build debug APK
         run: gradle :app:assembleDebug
       - uses: actions/upload-artifact@v4
@@ -26,3 +34,54 @@ jobs:
           name: focusstep-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 30
+
+  beta-release:
+    if: startsWith(github.ref, 'refs/tags/beta-')
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Add Firebase config when configured
+        if: ${{ secrets.FIREBASE_ANDROID_CONFIG_JSON != '' }}
+        env:
+          FIREBASE_ANDROID_CONFIG_JSON: ${{ secrets.FIREBASE_ANDROID_CONFIG_JSON }}
+        run: printf '%s' "$FIREBASE_ANDROID_CONFIG_JSON" > app/google-services.json
+      - name: Validate beta signing secrets
+        env:
+          BETA_KEYSTORE_BASE64: ${{ secrets.BETA_KEYSTORE_BASE64 }}
+          BETA_KEYSTORE_PASSWORD: ${{ secrets.BETA_KEYSTORE_PASSWORD }}
+          BETA_KEY_ALIAS: ${{ secrets.BETA_KEY_ALIAS }}
+          BETA_KEY_PASSWORD: ${{ secrets.BETA_KEY_PASSWORD }}
+        run: |
+          test -n "$BETA_KEYSTORE_BASE64" || (echo "Missing BETA_KEYSTORE_BASE64 secret" && exit 1)
+          test -n "$BETA_KEYSTORE_PASSWORD" || (echo "Missing BETA_KEYSTORE_PASSWORD secret" && exit 1)
+          test -n "$BETA_KEY_ALIAS" || (echo "Missing BETA_KEY_ALIAS secret" && exit 1)
+          test -n "$BETA_KEY_PASSWORD" || (echo "Missing BETA_KEY_PASSWORD secret" && exit 1)
+          echo "$BETA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/focusstep-beta.jks"
+      - name: Build signed beta APK
+        env:
+          BETA_KEYSTORE_PATH: ${{ runner.temp }}/focusstep-beta.jks
+          BETA_KEYSTORE_PASSWORD: ${{ secrets.BETA_KEYSTORE_PASSWORD }}
+          BETA_KEY_ALIAS: ${{ secrets.BETA_KEY_ALIAS }}
+          BETA_KEY_PASSWORD: ${{ secrets.BETA_KEY_PASSWORD }}
+        run: gradle :app:assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: focusstep-signed-beta-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish downloadable beta release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" app/build/outputs/apk/release/app-release.apk --title "FocusStep ${GITHUB_REF_NAME}" --notes "Beta APK для личного тестирования." --prerelease

@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.chvertko.focusstep.AppPrefs
+import com.chvertko.focusstep.Telemetry
 import com.chvertko.focusstep.data.QuestionRepository
 import kotlinx.coroutines.delay
 
@@ -20,6 +21,7 @@ class GateActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val target = intent.getStringExtra(EXTRA_PACKAGE).orEmpty()
+        Telemetry.applyConsent(this)
         setContent { GateScreen(target) }
     }
 }
@@ -33,7 +35,9 @@ private fun GateScreen(targetPackage: String) {
     var waitUntil by remember { mutableLongStateOf(prefs.getLong(waitKey, 0L)) }
     val question = remember {
         val enabled = AppPrefs.selectedCategories(context)
-        val candidates = runCatching { QuestionRepository.load(context) }.getOrDefault(emptyList())
+        val candidates = runCatching { QuestionRepository.load(context) }
+            .onFailure { Telemetry.event(context, "question_bank_load", mapOf("result" to "failure")); Telemetry.error(context, "question_bank_load", it) }
+            .getOrDefault(emptyList())
             .filter { enabled.isEmpty() || it.category in enabled }
         if (candidates.isEmpty()) null else {
             val last = prefs.getString("last_question", null)
@@ -50,8 +54,6 @@ private fun GateScreen(targetPackage: String) {
     var selected by remember { mutableIntStateOf(-1) }
     var feedback by remember { mutableStateOf("") }
     var solved by remember { mutableStateOf(false) }
-    val startTime = remember { System.currentTimeMillis() }
-
     LaunchedEffect(waitUntil) {
         if (waitUntil > 0) {
             while (true) {
@@ -71,8 +73,10 @@ private fun GateScreen(targetPackage: String) {
                     Text("${remaining / 60}:${(remaining % 60).toString().padStart(2, '0')}", style = MaterialTheme.typography.displayMedium)
                     LinearProgressIndicator(progress = { 1f - remaining.toFloat() / (AppPrefs.waitMinutes(context) * 60f) }, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.weight(1f))
-                    OutlinedButton(onClick = { returnToHome(activity) }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться назад") }
+                    OutlinedButton(onClick = { Telemetry.event(context, "gate_return_home", mapOf("stage" to "waiting")); AppPrefs.recordOutcome(context, false, AppPrefs.waitMinutes(context) * 60); returnToHome(activity) }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться назад") }
+                    TextButton(onClick = { Telemetry.event(context, "wait_cancelled_to_question"); prefs.edit().remove(waitKey).apply(); waitUntil = 0L; feedback = "Можно снова решить задание." }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться к заданию") }
                     Button(onClick = {
+                        Telemetry.event(context, "wait_completed_continue")
                         AppPrefs.grantAccess(context, targetPackage)
                         AppPrefs.recordOutcome(context, false, 0)
                         activity.finish()
@@ -81,36 +85,40 @@ private fun GateScreen(targetPackage: String) {
                     Text("Хороший шаг. ${question?.explanation.orEmpty()}")
                     Spacer(Modifier.weight(1f))
                     Button(onClick = {
+                        Telemetry.event(context, "question_solved_continue")
                         AppPrefs.grantAccess(context, targetPackage)
-                        AppPrefs.recordOutcome(context, true, ((System.currentTimeMillis() - startTime) / 1000).toInt())
+                        AppPrefs.recordOutcome(context, true, 0)
                         activity.finish()
                     }, modifier = Modifier.fillMaxWidth()) { Text("Продолжить в $appLabel") }
-                    TextButton(onClick = { returnToHome(activity) }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться к своему делу") }
+                    TextButton(onClick = { Telemetry.event(context, "gate_return_home", mapOf("stage" to "solved")); AppPrefs.recordOutcome(context, true, AppPrefs.waitMinutes(context) * 60); returnToHome(activity) }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться к своему делу") }
                 } else if (question != null) {
                     Text(question.prompt, style = MaterialTheme.typography.titleLarge)
                     question.options.forEachIndexed { index, option ->
-                        OutlinedButton(onClick = { selected = index; feedback = "" }, modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(onClick = { selected = index; feedback = ""; Telemetry.event(context, "answer_option_selected") }, modifier = Modifier.fillMaxWidth()) {
                             Text((if (selected == index) "●  " else "○  ") + option)
                         }
                     }
                     if (feedback.isNotBlank()) Text(feedback, color = MaterialTheme.colorScheme.secondary)
                     Spacer(Modifier.weight(1f))
                     Button(onClick = {
-                        if (selected == question.answerIndex) solved = true
-                        else feedback = "Пока не совсем. Попробуй ещё раз или выбери ожидание."
+                        val correct = selected == question.answerIndex
+                        Telemetry.event(context, "answer_checked", mapOf("correct" to correct.toString()))
+                        if (correct) solved = true else feedback = "Пока не совсем. Попробуй ещё раз или выбери ожидание."
                     }, enabled = selected >= 0, modifier = Modifier.fillMaxWidth()) { Text("Проверить ответ") }
                     OutlinedButton(onClick = {
+                        Telemetry.event(context, "wait_started", mapOf("duration_minutes" to AppPrefs.waitMinutes(context).toString()))
                         val until = System.currentTimeMillis() + AppPrefs.waitMinutes(context) * 60_000L
                         prefs.edit().putLong(waitKey, until).apply()
                         waitUntil = until
                         remaining = AppPrefs.waitMinutes(context) * 60L
                         feedback = "Таймер запущен. Можно оставить экран или вернуться позже."
                     }, modifier = Modifier.fillMaxWidth()) { Text("Пропустить · подождать ${AppPrefs.waitMinutes(context)} мин") }
-                    TextButton(onClick = { returnToHome(activity) }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться назад") }
+                    TextButton(onClick = { Telemetry.event(context, "gate_return_home", mapOf("stage" to "question")); AppPrefs.recordOutcome(context, false, AppPrefs.waitMinutes(context) * 60); returnToHome(activity) }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться назад") }
                 } else {
                     Text("Каталог заданий не удалось открыть. Можно подождать и продолжить.")
                     Spacer(Modifier.weight(1f))
                     OutlinedButton(onClick = {
+                        Telemetry.event(context, "wait_started", mapOf("duration_minutes" to AppPrefs.waitMinutes(context).toString()))
                         val until = System.currentTimeMillis() + AppPrefs.waitMinutes(context) * 60_000L
                         prefs.edit().putLong(waitKey, until).apply()
                         waitUntil = until

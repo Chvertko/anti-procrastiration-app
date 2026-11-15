@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.content.Intent
 import android.view.accessibility.AccessibilityEvent
 import com.chvertko.focusstep.AppPrefs
+import com.chvertko.focusstep.Telemetry
 import com.chvertko.focusstep.ui.GateActivity
 
 class AppMonitorService : AccessibilityService() {
@@ -21,13 +22,16 @@ class AppMonitorService : AccessibilityService() {
         lastPackage = packageName
         lastTriggerAt = now
         AppPrefs.recordAttempt(this)
+        Telemetry.event(this, "monitored_app_open_attempt")
 
         try {
             startActivity(Intent(this, GateActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 putExtra(GateActivity.EXTRA_PACKAGE, packageName)
             })
-        } catch (_: RuntimeException) {
+        } catch (error: RuntimeException) {
+            Telemetry.event(this, "gate_launch", mapOf("result" to "failure"))
+            Telemetry.error(this, "gate_launch", error)
             // Android may deny background activity launches on some device/version combinations.
             // Keep the accessibility service alive; the feasibility limitation is documented in the app.
         }
