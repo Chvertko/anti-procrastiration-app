@@ -7,6 +7,7 @@ import android.content.Intent
 import android.provider.Settings
 import android.os.Handler
 import android.os.Looper
+import android.net.Uri
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -82,27 +84,90 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit) {
     val context = LocalContext.current
     var showDisclosure by remember { mutableStateOf(false) }
     var showPinDialog by remember { mutableStateOf(false) }
-    val serviceEnabled = remember(refreshKey) { isMonitorEnabled(context) }
+    val accessibilityEnabled = remember(refreshKey) { isMonitorEnabled(context) }
+    var serviceHeartbeatFresh by remember(refreshKey) { mutableStateOf(AppPrefs.isMonitorHeartbeatFresh(context)) }
+    val xiaomiDevice = remember { isXiaomiFamilyDevice() }
+    var xiaomiWindowsConfirmed by remember(refreshKey) { mutableStateOf(AppPrefs.xiaomiWindowSetupConfirmed(context)) }
+    var xiaomiBackgroundConfirmed by remember(refreshKey) { mutableStateOf(AppPrefs.xiaomiBackgroundSetupConfirmed(context)) }
     val apps = remember(refreshKey) { AppPrefs.selectedApps(context) }
     val stats = remember(refreshKey) { AppPrefs.dailyStats(context) }
+    val xiaomiSetupConfirmed = !xiaomiDevice || (xiaomiWindowsConfirmed && xiaomiBackgroundConfirmed)
+    val serviceEnabled = accessibilityEnabled && serviceHeartbeatFresh && xiaomiSetupConfirmed && apps.isNotEmpty()
+
+    LaunchedEffect(refreshKey, accessibilityEnabled) {
+        if (accessibilityEnabled && !serviceHeartbeatFresh) {
+            repeat(6) {
+                delay(2_000L)
+                serviceHeartbeatFresh = AppPrefs.isMonitorHeartbeatFresh(context)
+                if (serviceHeartbeatFresh) return@LaunchedEffect
+            }
+        }
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("FocusStep", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text("Сделай короткую паузу перед лентой.", style = MaterialTheme.typography.bodyLarge)
         ElevatedCard {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(if (serviceEnabled && apps.isNotEmpty()) "Защита активна" else "Нужна настройка", style = MaterialTheme.typography.titleLarge)
-                Text(if (serviceEnabled) "Сервис включён. Выбрано приложений: ${apps.size}." else "Выбери приложения и включи доступ FocusStep в настройках специальных возможностей.")
-                Button(onClick = {
+                Text(
+                    when {
+                        serviceEnabled && apps.isNotEmpty() -> "Защита активна"
+                        xiaomiDevice && !xiaomiSetupConfirmed -> "Нужны разрешения Redmi/Xiaomi"
+                        accessibilityEnabled && !serviceHeartbeatFresh -> "Служба не отвечает"
+                        else -> "Нужна настройка"
+                    },
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Text(
+                    when {
+                        serviceEnabled -> "Служба работает в фоне. Выбрано приложений: ${apps.size}."
+                        xiaomiDevice && !xiaomiSetupConfirmed -> "Разреши фоновое открытие окон и работу без ограничений батареи в карточке настройки ниже."
+                        accessibilityEnabled && !serviceHeartbeatFresh -> "Служба включена в Android, но сейчас не отвечает. Открой настройки специальных возможностей и проверь её состояние."
+                        apps.isEmpty() -> "Сначала выбери приложения, для которых нужна пауза."
+                        else -> "Включи доступ FocusStep в настройках специальных возможностей Android."
+                    },
+                )
+                Button(enabled = !serviceEnabled, onClick = {
                     when {
                         apps.isEmpty() -> onSettings()
+                        xiaomiDevice && !xiaomiSetupConfirmed -> openApplicationSettings(context)
                         !PinCode.isSet(context) -> showPinDialog = true
-                        else -> showDisclosure = true
+                        !accessibilityEnabled -> showDisclosure = true
+                        else -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     }
-                }, enabled = !serviceEnabled) {
-                    Text(when { apps.isEmpty() -> "Выбрать приложения"; !PinCode.isSet(context) -> "Задать PIN"; else -> "Включить защиту" })
+                }) {
+                    Text(when {
+                        apps.isEmpty() -> "Выбрать приложения"
+                        xiaomiDevice && !xiaomiSetupConfirmed -> "Открыть настройки Redmi/Xiaomi"
+                        !PinCode.isSet(context) -> "Задать PIN"
+                        !accessibilityEnabled -> "Включить защиту"
+                        else -> "Проверить службу"
+                    })
                 }
                 if (serviceEnabled) Text("Отключение доступно в системных настройках Android.", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        if (xiaomiDevice) ElevatedCard {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Обязательная настройка Redmi/Xiaomi", style = MaterialTheme.typography.titleLarge)
+                Text("MIUI/HyperOS может оставить экран FocusStep за Instagram и остановить службу при очистке недавних приложений. В карточке FocusStep открой «Другие разрешения»: разреши открывать новые окна и показывать всплывающие окна в фоне. Для работы после смахивания включи автозапуск и выбери для батареи режим «Без ограничений». Названия пунктов могут отличаться.")
+                OutlinedButton(onClick = { openApplicationSettings(context) }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Открыть настройки FocusStep")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = xiaomiWindowsConfirmed, onCheckedChange = {
+                        xiaomiWindowsConfirmed = it
+                        AppPrefs.setXiaomiWindowSetupConfirmed(context, it)
+                    })
+                    Text("Разрешил открытие окон и всплывающие окна в фоне")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = xiaomiBackgroundConfirmed, onCheckedChange = {
+                        xiaomiBackgroundConfirmed = it
+                        AppPrefs.setXiaomiBackgroundSetupConfirmed(context, it)
+                    })
+                    Text("Включил автозапуск и снял ограничения батареи")
+                }
             }
         }
         ElevatedCard {
@@ -128,6 +193,18 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit) {
         dismissButton = { TextButton(onClick = { showDisclosure = false }) { Text("Отмена") } },
     )
     if (showPinDialog) PinSetupDialog(onDone = { showPinDialog = false }, onCancel = { showPinDialog = false })
+}
+
+private fun openApplicationSettings(context: Context) {
+    context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = Uri.fromParts("package", context.packageName, null)
+    })
+}
+
+private fun isXiaomiFamilyDevice(): Boolean {
+    val manufacturer = android.os.Build.MANUFACTURER.lowercase(Locale.ROOT)
+    val brand = android.os.Build.BRAND.lowercase(Locale.ROOT)
+    return listOf("xiaomi", "redmi", "poco").any { it in manufacturer || it in brand }
 }
 
 @Composable

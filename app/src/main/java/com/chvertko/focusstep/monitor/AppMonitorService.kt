@@ -2,6 +2,8 @@ package com.chvertko.focusstep.monitor
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
 import com.chvertko.focusstep.AppPrefs
 import com.chvertko.focusstep.Telemetry
@@ -10,6 +12,19 @@ import com.chvertko.focusstep.ui.GateActivity
 class AppMonitorService : AccessibilityService() {
     private var lastPackage = ""
     private var lastTriggerAt = 0L
+    private val heartbeatHandler = Handler(Looper.getMainLooper())
+    private val heartbeat = object : Runnable {
+        override fun run() {
+            AppPrefs.recordMonitorHeartbeat(this@AppMonitorService)
+            heartbeatHandler.postDelayed(this, 20_000L)
+        }
+    }
+
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        heartbeatHandler.removeCallbacks(heartbeat)
+        heartbeat.run()
+    }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
@@ -38,4 +53,16 @@ class AppMonitorService : AccessibilityService() {
     }
 
     override fun onInterrupt() = Unit
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        heartbeatHandler.removeCallbacks(heartbeat)
+        AppPrefs.clearMonitorHeartbeat(this)
+        return super.onUnbind(intent)
+    }
+
+    override fun onDestroy() {
+        heartbeatHandler.removeCallbacks(heartbeat)
+        AppPrefs.clearMonitorHeartbeat(this)
+        super.onDestroy()
+    }
 }

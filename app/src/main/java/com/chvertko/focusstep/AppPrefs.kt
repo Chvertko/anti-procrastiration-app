@@ -16,6 +16,29 @@ object AppPrefs {
     fun remoteUrl(context: Context): String = prefs(context).getString("remote_url", "") ?: ""
     fun setRemoteUrl(context: Context, value: String) { prefs(context).edit().putString("remote_url", value.trim()).apply() }
 
+    fun xiaomiWindowSetupConfirmed(context: Context): Boolean = prefs(context).getBoolean("xiaomi_window_setup_confirmed", false)
+    fun setXiaomiWindowSetupConfirmed(context: Context, value: Boolean) {
+        prefs(context).edit().putBoolean("xiaomi_window_setup_confirmed", value).apply()
+    }
+    fun xiaomiBackgroundSetupConfirmed(context: Context): Boolean = prefs(context).getBoolean("xiaomi_background_setup_confirmed", false)
+    fun setXiaomiBackgroundSetupConfirmed(context: Context, value: Boolean) {
+        prefs(context).edit().putBoolean("xiaomi_background_setup_confirmed", value).apply()
+    }
+
+    fun recordMonitorHeartbeat(context: Context) {
+        prefs(context).edit().putLong("monitor_heartbeat_ms", System.currentTimeMillis()).apply()
+    }
+
+    fun clearMonitorHeartbeat(context: Context) {
+        prefs(context).edit().putLong("monitor_heartbeat_ms", 0L).apply()
+    }
+
+    fun isMonitorHeartbeatFresh(context: Context, maxAgeMillis: Long = 90_000L): Boolean {
+        val heartbeat = prefs(context).getLong("monitor_heartbeat_ms", 0L)
+        val age = System.currentTimeMillis() - heartbeat
+        return heartbeat > 0L && age in 0..maxAgeMillis
+    }
+
     fun grantAccess(context: Context, packageName: String, minutes: Int = 10) {
         prefs(context).edit().putLong("allow_until_$packageName", System.currentTimeMillis() + minutes * 60_000L).apply()
     }
