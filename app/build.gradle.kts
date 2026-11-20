@@ -48,6 +48,10 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+            resValue("string", "app_name", "FocusStep Debug")
+        }
         getByName("release") {
             if (!betaKeystorePath.isNullOrBlank()) signingConfig = signingConfigs.getByName("beta")
         }
@@ -69,6 +73,9 @@ dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2025.08.00")
     implementation(composeBom)
     implementation("androidx.activity:activity-compose:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-android:2.9.4")
+    implementation("androidx.savedstate:savedstate-android:1.3.3")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")

@@ -14,7 +14,7 @@ This repository currently supports debug APK artifacts for personal testing and 
 
 ## Debug artifact
 
-After a push or manual run, open GitHub Actions → **Android build** → the successful run and download `focusstep-debug-apk`. It is a debug build for personal testing, retained for 30 days; do not present it as a production release.
+After a push or manual run, open GitHub Actions → **Android build** → the successful run and download `focusstep-debug-apk`. It is a debug build with application ID `com.chvertko.focusstep.debug` for personal testing, retained for 30 days; it installs alongside the signed beta and is not a production release.
 
 ## Signed beta release
 

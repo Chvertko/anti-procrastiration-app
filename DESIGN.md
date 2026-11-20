@@ -12,7 +12,7 @@
 
 The app is a single Android application (`com.chvertko.focusstep`) built with Kotlin, Jetpack Compose/Material 3, Gradle Kotlin DSL, and minSdk 26 / target and compile SDK 36. Current code is organized under `app/src/main/java/com/chvertko/focusstep`: UI activities, preferences, question data, monitoring service, and telemetry. The question bank is bundled at `app/src/main/assets/questions.json`; an imported pack is validated before replacing it.
 
-`AppMonitorService` adapts Android AccessibilityService events to the gate experience. Keep Android system integration at this boundary and keep product decisions (selected apps, gate state, wait/access window) explicit and independently understandable. The current codebase is small; do not add modules, layers, or libraries without a concrete need.
+`AppMonitorService` adapts Android AccessibilityService events to the gate experience. It renders the shared Compose gate in a `TYPE_ACCESSIBILITY_OVERLAY` window, so it does not rely on starting an Activity from the background. The overlay is removed when the user leaves the selected app or continues. Keep Android system integration at this boundary and keep product decisions (selected apps, gate state, wait/access window) explicit and independently understandable. The current codebase is small; do not add modules, layers, or libraries without a concrete need.
 
 ## Key user flow and states
 
@@ -26,7 +26,7 @@ Represent and test transitions explicitly: service unavailable/disabled, no apps
 
 ## Platform and privacy constraints
 
-- Accessibility access is user-controlled and revocable. Do not obstruct system controls, conceal the service, inspect window text/content, or imply that sideloading proves Google Play eligibility.
+- Accessibility access is user-controlled and revocable. Explain that the service notices selected-app window changes and places the gate over those apps. Do not obstruct system controls, conceal the service, inspect window text/content, or imply that sideloading proves Google Play eligibility.
 - Foreground and background activity starts vary across Android versions and OEMs. Treat the gate mechanism as a platform risk and validate it on real devices before relying on it.
 - Do not add package names, answer text, question content, PINs, or other sensitive details to analytics, crash reports, or logs. Aggregate monitored-app counts only when needed.
 - Do not claim system-wide usage measurement. Label estimates with their calculation method.

@@ -4,6 +4,8 @@ FocusStep creates a short pause before selected apps. It shows an original JavaS
 
 This is a personal testing prototype. It uses an Android AccessibilityService to observe window changes for packages selected by the user. Google Play restricts this API; sideloading for personal testing does not establish Play Store eligibility. The service does not retrieve window content, text, screenshots, or input. Android lets the device owner disable the service or uninstall the app.
 
+While the AccessibilityService is connected, the app promotes it to a foreground service and shows an ongoing status notification. Android 14+ requires a declared foreground-service type; this build uses `specialUse` for user-requested app monitoring. A Play release also requires declaring this use case in Play Console and passing review. The foreground service improves persistence after dismissing the app task, but Android and device manufacturers may still stop it; protection cannot survive a user force-stop or revoked Accessibility access.
+
 ## Build a debug APK
 
 Requirements:
@@ -33,7 +35,7 @@ $env:ANDROID_SDK_ROOT = $env:ANDROID_HOME
 .\gradlew.bat :app:assembleDebug
 ```
 
-The APK is produced at `app\build\outputs\apk\debug\app-debug.apk`.
+The APK is produced at `app\build\outputs\apk\debug\app-debug.apk`. Debug builds use the separate application ID `com.chvertko.focusstep.debug` and display as **FocusStep Debug**, so they can be installed alongside a signed beta without erasing its local settings. Release builds keep the application ID `com.chvertko.focusstep`.
 
 ## Download a beta APK from GitHub
 
@@ -80,10 +82,13 @@ Copy `app-debug.apk` to the phone, open it from Files, and allow installation fr
 1. Open **FocusStep**.
 2. Open **Настройки** and choose the apps to monitor (for example, Instagram).
 3. Return to **Сегодня**, set a PIN (you can ask a trusted person to choose it), then tap **Включить защиту**.
-4. Review the disclosure and tap **Понятно, открыть настройки**.
-5. In Android's Accessibility settings, enable **FocusStep: пауза перед приложениями** and confirm the system warning.
+4. Review the disclosure and tap **Открыть FocusStep в настройках**. On Android versions that support it, this opens FocusStep's service page directly; otherwise, find FocusStep in Accessibility settings.
+5. Enable the FocusStep switch and confirm Android's system warning. Android requires this user action.
 6. Open a selected app. The question gate should appear. Answer correctly, or choose the wait timer; after the timer, tap the continue button.
-7. To stop monitoring, switch off FocusStep in Android's Accessibility settings.
+7. In **Настройки**, set the temporary unlock period (5–30 minutes, 10 by default); the ongoing notification shows its countdown. Allow notifications so Android can show the timer in the notification shade. The app dashboard also has a status-and-statistics card with the app icon.
+8. In **Настройки → Виджет FocusStep**, choose whether the launcher widget shows daily statistics and tap **Добавить плашку на экран**. Confirm the launcher prompt. The widget shows the app icon and protection status.
+9. If Android or the phone manufacturer stops the service, FocusStep remembers that protection was requested and shows a restore action. The widget also reports when the heartbeat becomes stale.
+10. To stop protection from the app, tap **Отключить защиту**, enter the PIN, and confirm. FocusStep clears the selected-app list and temporary grants and disables its AccessibilityService. You can also revoke the service in Android settings.
 
 The optional PIN protects edits made inside FocusStep. It cannot prevent a device owner from disabling the Android service, clearing app data, or uninstalling the app.
 

@@ -19,11 +19,21 @@ If instrumentation tests exist or are added, run them on a documented emulator/d
 
 - Fresh install, onboarding/settings, no monitored apps, and service disabled/enabled.
 - Select and deselect apps; verify only selected targets trigger the gate.
+- On Android 10+ and target API 36, verify the gate is shown as an accessibility overlay above the selected app while FocusStep has no visible Activity; confirm switching to an unselected app removes the overlay.
 - Correct and incorrect answers, answer completion, wait at the minimum and maximum configured durations, expiry, return, and repeated app switching.
 - Close/reopen or background the gate while waiting; verify timer and continuation state are predictable.
 - Revoke accessibility access, force-stop/restart, and reboot; verify clear recovery and no false claim that protection remains active.
 - Import valid, malformed, oversized, wrong-schema, duplicate-ID, unsupported-category, and unreachable/non-HTTPS packs; verify failed imports do not replace the active bank.
 - Inspect daily summary labels and ensure estimates are not presented as measured device usage.
+- Verify the home-screen widget status on service connect/disconnect and check that its daily statistics refresh after gate attempts/outcomes.
+- Verify settings opens with the selected-app list visible, selection changes appear in that list, and the pinned **Готово** button returns to Today.
+- With protection active, verify the status card is green and **Отключить защиту** requires the local PIN plus a second confirmation, then clears selected packages, temporary grants, accessibility self-binding, and the status indicator.
+- Start playback in a protected app before the gate; verify the gate silences it and dismissing the gate restores the previous music volume. Also verify volume is restored after process restart.
+- Verify the in-app widget controls can request a launcher pin and toggle daily stats, and that the widget uses the app icon.
+- After solving the gate, verify the configured temporary-access countdown appears in the ongoing notification and the gate returns at expiry while the selected app remains foreground.
+- On Android 13+, verify the notification permission is requested during setup (or from Settings) and that denial does not prevent protection from running.
+- Verify the enable flow deep-links to the app-specific Accessibility page where supported and falls back to the general settings page elsewhere.
+- Verify gate action buttons remain above Android's system navigation area on gesture and three-button navigation modes.
 - Verify diagnostics stay off by default, opt-in/out works, and no answer text, package names, question content, or PIN enters telemetry/logs.
 
 ## Device coverage
@@ -33,3 +43,18 @@ For interception or lifecycle changes, test representative Android versions and 
 ## Reporting failures
 
 Provide reproduction steps, expected and actual behavior, app version/build, Android version/device, and sanitized logs. Separate a reproducible product defect from an OS/OEM limitation, and link the issue to its acceptance criteria.
+
+## Latest device run
+
+Run date: 2026-11-20. Device: Xiaomi 23030RAC7Y, Android 15 (API 35); app targets API 36.
+
+- Installed **FocusStep Debug** (`com.chvertko.focusstep.debug`, version code 20) beside the existing signed beta. The beta could not be updated by the local debug key, so its data and service were left intact.
+- The widget provider is registered on-device. Manual launcher-widget placement was not included in this run.
+- Crash buffer analysis found repeated FocusStep crashes (16:27–16:32): `SecurityException` starting the hidden Accessibility details settings activity due to missing `OPEN_ACCESSIBILITY_DETAILS_SETTINGS`. The old Compose `SavedStateRegistryOwner` exception at 15:45 predates its fix. The settings helper now catches the restricted intent and falls back to public Accessibility settings.
+- ADB confirmed version 16 ran the Debug monitor as a foreground service with notification ID 4107 and special-use type on Android 15. No new crash-buffer entry appeared after version 17 was installed and opened.
+- The user reported the settings **Готово** button was behind the navigation bar, no widget was visible, the red disable button had blue text, crashes continued, and the temporary unlock duration was unclear. The follow-up build adds navigation-bar insets, an in-app icon/statistics card, explicit white text on the danger action, a visible configurable 5–30 minute access timer (10-minute default), and timed gate reactivation plus countdown notification.
+- ADB `exit-info` after version 20 shows `PACKAGE UPDATED`, not a crash; crash-buffer entries remain the previously diagnosed `OPEN_ACCESSIBILITY_DETAILS_SETTINGS` permission failures. UI, audio, notification-permission, and countdown checks for version 20 are pending manual confirmation on the phone.
+- The user reported seeing a gate and wait countdown, but the original signed beta service was also enabled during that run. The debug preferences had no recorded wait state afterward, so the visual result cannot yet be attributed conclusively to the new overlay.
+- The first overlay build exposed a missing Compose `SavedStateRegistryOwner`; the owner was added before the later device run.
+- `:app:testDebugUnitTest` completed with `NO-SOURCE`; this repository currently has no unit-test sources.
+- Repeat the gate/countdown run with the old beta service temporarily disabled, then test wait/resume/expiry across leaving and reopening the selected app.

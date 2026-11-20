@@ -1,6 +1,5 @@
 package com.chvertko.focusstep.ui
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -22,14 +21,26 @@ class GateActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val target = intent.getStringExtra(EXTRA_PACKAGE).orEmpty()
         Telemetry.applyConsent(this)
-        setContent { GateScreen(target) }
+        setContent {
+            GateScreen(
+                targetPackage = target,
+                onContinue = { completed ->
+                    AppPrefs.grantAccess(this, target)
+                    AppPrefs.recordOutcome(this, completed, 0)
+                    finish()
+                },
+                onReturnHome = {
+                    startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    finish()
+                },
+            )
+        }
     }
 }
 
 @Composable
-private fun GateScreen(targetPackage: String) {
-    val activity = androidx.compose.ui.platform.LocalContext.current as Activity
-    val context = activity
+internal fun GateScreen(targetPackage: String, onContinue: (completed: Boolean) -> Unit, onReturnHome: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = context.getSharedPreferences("focusstep", 0)
     val waitKey = "wait_until_$targetPackage"
     var waitUntil by remember { mutableLongStateOf(prefs.getLong(waitKey, 0L)) }
@@ -64,7 +75,7 @@ private fun GateScreen(targetPackage: String) {
     }
 
     MaterialTheme(colorScheme = darkColorScheme(primary = androidx.compose.ui.graphics.Color(0xFF8DE0C1), secondary = androidx.compose.ui.graphics.Color(0xFFF4BD78))) {
-        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Surface(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), color = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text("Небольшая пауза", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 Text("Ты собирался открыть $appLabel", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -73,24 +84,20 @@ private fun GateScreen(targetPackage: String) {
                     Text("${remaining / 60}:${(remaining % 60).toString().padStart(2, '0')}", style = MaterialTheme.typography.displayMedium)
                     LinearProgressIndicator(progress = { 1f - remaining.toFloat() / (AppPrefs.waitMinutes(context) * 60f) }, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.weight(1f))
-                    OutlinedButton(onClick = { Telemetry.event(context, "gate_return_home", mapOf("stage" to "waiting")); AppPrefs.recordOutcome(context, false, AppPrefs.waitMinutes(context) * 60); returnToHome(activity) }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться назад") }
+                    OutlinedButton(onClick = { Telemetry.event(context, "gate_return_home", mapOf("stage" to "waiting")); AppPrefs.recordOutcome(context, false, AppPrefs.waitMinutes(context) * 60); onReturnHome() }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться назад") }
                     TextButton(onClick = { Telemetry.event(context, "wait_cancelled_to_question"); prefs.edit().remove(waitKey).apply(); waitUntil = 0L; feedback = "Можно снова решить задание." }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться к заданию") }
                     Button(onClick = {
                         Telemetry.event(context, "wait_completed_continue")
-                        AppPrefs.grantAccess(context, targetPackage)
-                        AppPrefs.recordOutcome(context, false, 0)
-                        activity.finish()
+                        onContinue(false)
                     }, enabled = remaining == 0L, modifier = Modifier.fillMaxWidth()) { Text(if (remaining == 0L) "Открыть $appLabel" else "Ожидание…") }
                 } else if (solved) {
                     Text("Хороший шаг. ${question?.explanation.orEmpty()}")
                     Spacer(Modifier.weight(1f))
                     Button(onClick = {
                         Telemetry.event(context, "question_solved_continue")
-                        AppPrefs.grantAccess(context, targetPackage)
-                        AppPrefs.recordOutcome(context, true, 0)
-                        activity.finish()
+                        onContinue(true)
                     }, modifier = Modifier.fillMaxWidth()) { Text("Продолжить в $appLabel") }
-                    TextButton(onClick = { Telemetry.event(context, "gate_return_home", mapOf("stage" to "solved")); AppPrefs.recordOutcome(context, true, AppPrefs.waitMinutes(context) * 60); returnToHome(activity) }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться к своему делу") }
+                    TextButton(onClick = { Telemetry.event(context, "gate_return_home", mapOf("stage" to "solved")); AppPrefs.recordOutcome(context, true, AppPrefs.waitMinutes(context) * 60); onReturnHome() }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться к своему делу") }
                 } else if (question != null) {
                     Text(question.prompt, style = MaterialTheme.typography.titleLarge)
                     question.options.forEachIndexed { index, option ->
@@ -113,7 +120,7 @@ private fun GateScreen(targetPackage: String) {
                         remaining = AppPrefs.waitMinutes(context) * 60L
                         feedback = "Таймер запущен. Можно оставить экран или вернуться позже."
                     }, modifier = Modifier.fillMaxWidth()) { Text("Пропустить · подождать ${AppPrefs.waitMinutes(context)} мин") }
-                    TextButton(onClick = { Telemetry.event(context, "gate_return_home", mapOf("stage" to "question")); AppPrefs.recordOutcome(context, false, AppPrefs.waitMinutes(context) * 60); returnToHome(activity) }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться назад") }
+                    TextButton(onClick = { Telemetry.event(context, "gate_return_home", mapOf("stage" to "question")); AppPrefs.recordOutcome(context, false, AppPrefs.waitMinutes(context) * 60); onReturnHome() }, modifier = Modifier.fillMaxWidth()) { Text("Вернуться назад") }
                 } else {
                     Text("Каталог заданий не удалось открыть. Можно подождать и продолжить.")
                     Spacer(Modifier.weight(1f))
@@ -122,16 +129,10 @@ private fun GateScreen(targetPackage: String) {
                         val until = System.currentTimeMillis() + AppPrefs.waitMinutes(context) * 60_000L
                         prefs.edit().putLong(waitKey, until).apply()
                         waitUntil = until
-                        activity.recreate()
                     }, modifier = Modifier.fillMaxWidth()) { Text("Подождать ${AppPrefs.waitMinutes(context)} мин") }
-                    TextButton(onClick = { returnToHome(activity) }, modifier = Modifier.fillMaxWidth()) { Text("Назад") }
+                    TextButton(onClick = onReturnHome, modifier = Modifier.fillMaxWidth()) { Text("Назад") }
                 }
             }
         }
     }
-}
-
-private fun returnToHome(activity: Activity) {
-    activity.startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    activity.finish()
 }

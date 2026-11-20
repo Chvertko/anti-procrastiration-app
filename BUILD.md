@@ -23,7 +23,7 @@ Build with the repository wrapper:
 .\gradlew.bat :app:assembleDebug
 ```
 
-The APK is `app\build\outputs\apk\debug\app-debug.apk`. Android Studio can also sync the project and run **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
+The APK is `app\build\outputs\apk\debug\app-debug.apk`. The debug variant uses application ID `com.chvertko.focusstep.debug` and label **FocusStep Debug**, so it can coexist with a signed beta. Android Studio can also sync the project and run **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
 
 ## Configuration and secrets
 

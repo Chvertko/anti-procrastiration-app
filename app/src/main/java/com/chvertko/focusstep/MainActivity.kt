@@ -7,12 +7,13 @@ import android.content.Intent
 import android.provider.Settings
 import android.os.Handler
 import android.os.Looper
-import android.net.Uri
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -20,8 +21,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,15 +34,34 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val resumeState = mutableIntStateOf(0)
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        openAccessibilitySettings(this)
+    }
+
+    fun continueProtectionSetup() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            openAccessibilitySettings(this)
+        }
+    }
+
+    fun requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
+        AppPrefs.restoreInterruptedAudioMute(this)
         Telemetry.applyConsent(this)
         setContent { FocusStepApp(resumeState.intValue) }
     }
 
     override fun onResume() {
         super.onResume()
+        com.chvertko.focusstep.widget.FocusStepWidgetProvider.updateAll(this)
         resumeState.intValue++
     }
 }
@@ -49,13 +71,26 @@ private fun FocusStepApp(refreshKey: Int) {
     val context = LocalContext.current
     var page by remember { mutableStateOf("home") }
     var verifyPin by remember { mutableStateOf(false) }
+    var homeRefresh by remember { mutableIntStateOf(0) }
+    val uiScope = rememberCoroutineScope()
     MaterialTheme(colorScheme = darkColorScheme(
         primary = androidx.compose.ui.graphics.Color(0xFF8DE0C1),
         secondary = androidx.compose.ui.graphics.Color(0xFFF4BD78),
         background = androidx.compose.ui.graphics.Color(0xFF101512),
         surface = androidx.compose.ui.graphics.Color(0xFF19211D),
     )) {
-        Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            bottomBar = {
+                if (page == "settings") {
+                    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.navigationBarsPadding()) {
+                        Button(onClick = { page = "home"; homeRefresh++ }, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)) {
+                            Text("Готово")
+                        }
+                    }
+                }
+            },
+        ) { padding ->
             Column(Modifier.fillMaxSize().padding(padding)) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("home" to "Сегодня", "questions" to "Вопросы", "settings" to "Настройки").forEach { (key, label) ->
@@ -67,8 +102,15 @@ private fun FocusStepApp(refreshKey: Int) {
                 }
                 when (page) {
                     "questions" -> QuestionsPage()
-                    "settings" -> SettingsPage()
-                    else -> HomePage(refreshKey, onSettings = { if (PinCode.isSet(context)) verifyPin = true else page = "settings" })
+                    "settings" -> SettingsPage(onDone = { page = "home"; homeRefresh++ })
+                    else -> HomePage(
+                        refreshKey + homeRefresh,
+                        onSettings = { if (PinCode.isSet(context)) verifyPin = true else page = "settings" },
+                        onDisabled = {
+                            homeRefresh++
+                            uiScope.launch { delay(750); homeRefresh++ }
+                        },
+                    )
                 }
             }
         }
@@ -80,19 +122,17 @@ private fun FocusStepApp(refreshKey: Int) {
 }
 
 @Composable
-private fun HomePage(refreshKey: Int, onSettings: () -> Unit) {
+private fun HomePage(refreshKey: Int, onSettings: () -> Unit, onDisabled: () -> Unit) {
     val context = LocalContext.current
     var showDisclosure by remember { mutableStateOf(false) }
     var showPinDialog by remember { mutableStateOf(false) }
+    var showDisablePinDialog by remember { mutableStateOf(false) }
+    var showDisableConfirmation by remember { mutableStateOf(false) }
     val accessibilityEnabled = remember(refreshKey) { isMonitorEnabled(context) }
     var serviceHeartbeatFresh by remember(refreshKey) { mutableStateOf(AppPrefs.isMonitorHeartbeatFresh(context)) }
-    val xiaomiDevice = remember { isXiaomiFamilyDevice() }
-    var xiaomiWindowsConfirmed by remember(refreshKey) { mutableStateOf(AppPrefs.xiaomiWindowSetupConfirmed(context)) }
-    var xiaomiBackgroundConfirmed by remember(refreshKey) { mutableStateOf(AppPrefs.xiaomiBackgroundSetupConfirmed(context)) }
     val apps = remember(refreshKey) { AppPrefs.selectedApps(context) }
     val stats = remember(refreshKey) { AppPrefs.dailyStats(context) }
-    val xiaomiSetupConfirmed = !xiaomiDevice || (xiaomiWindowsConfirmed && xiaomiBackgroundConfirmed)
-    val serviceEnabled = accessibilityEnabled && serviceHeartbeatFresh && xiaomiSetupConfirmed && apps.isNotEmpty()
+    val serviceEnabled = accessibilityEnabled && serviceHeartbeatFresh && apps.isNotEmpty()
 
     LaunchedEffect(refreshKey, accessibilityEnabled) {
         if (accessibilityEnabled && !serviceHeartbeatFresh) {
@@ -105,14 +145,24 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("FocusStep", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Сделай короткую паузу перед лентой.", style = MaterialTheme.typography.bodyLarge)
         ElevatedCard {
+            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Image(painterResource(R.drawable.ic_focusstep), contentDescription = "FocusStep", modifier = Modifier.size(52.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("FocusStep", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(if (serviceEnabled) "Защита работает · ${apps.size} приложений" else "Пауза перед выбранными приложениями", style = MaterialTheme.typography.bodySmall)
+                    Text("Сегодня: ${stats.attempts} попыток · ${stats.completed} заданий · ${stats.waits} пауз", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+        ElevatedCard(colors = CardDefaults.elevatedCardColors(
+            containerColor = if (serviceEnabled) androidx.compose.ui.graphics.Color(0xFF173A2A) else MaterialTheme.colorScheme.surface,
+        )) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     when {
-                        serviceEnabled && apps.isNotEmpty() -> "Защита активна"
-                        xiaomiDevice && !xiaomiSetupConfirmed -> "Нужны разрешения Redmi/Xiaomi"
+                        serviceEnabled -> "Защита активна"
+                        apps.isEmpty() -> "Выбери приложения"
                         accessibilityEnabled && !serviceHeartbeatFresh -> "Служба не отвечает"
                         else -> "Нужна настройка"
                     },
@@ -121,53 +171,39 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit) {
                 Text(
                     when {
                         serviceEnabled -> "Служба работает в фоне. Выбрано приложений: ${apps.size}."
-                        xiaomiDevice && !xiaomiSetupConfirmed -> "Разреши фоновое открытие окон и работу без ограничений батареи в карточке настройки ниже."
-                        accessibilityEnabled && !serviceHeartbeatFresh -> "Служба включена в Android, но сейчас не отвечает. Открой настройки специальных возможностей и проверь её состояние."
                         apps.isEmpty() -> "Сначала выбери приложения, для которых нужна пауза."
+                        accessibilityEnabled && !serviceHeartbeatFresh -> "Служба включена в Android, но сейчас не отвечает. Открой настройки специальных возможностей и проверь её состояние."
+                        AppPrefs.protectionRequested(context) -> "Android отключил или остановил службу. Нажми ниже, чтобы проверить разрешение и включить защиту снова."
                         else -> "Включи доступ FocusStep в настройках специальных возможностей Android."
                     },
                 )
-                Button(enabled = !serviceEnabled, onClick = {
-                    when {
+                Button(onClick = {
+                    if (serviceEnabled) {
+                        if (PinCode.isSet(context)) showDisablePinDialog = true else showPinDialog = true
+                    } else when {
                         apps.isEmpty() -> onSettings()
-                        xiaomiDevice && !xiaomiSetupConfirmed -> openApplicationSettings(context)
                         !PinCode.isSet(context) -> showPinDialog = true
-                        !accessibilityEnabled -> showDisclosure = true
-                        else -> context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        !accessibilityEnabled -> {
+                            AppPrefs.setProtectionRequested(context, true)
+                            com.chvertko.focusstep.widget.FocusStepWidgetProvider.updateAll(context)
+                            showDisclosure = true
+                        }
+                        else -> openAccessibilitySettings(context)
                     }
-                }) {
+                }, colors = if (serviceEnabled) ButtonDefaults.buttonColors(
+                    containerColor = androidx.compose.ui.graphics.Color(0xFFB23A48),
+                    contentColor = androidx.compose.ui.graphics.Color.White,
+                ) else ButtonDefaults.buttonColors()) {
                     Text(when {
+                        serviceEnabled -> "Отключить защиту"
                         apps.isEmpty() -> "Выбрать приложения"
-                        xiaomiDevice && !xiaomiSetupConfirmed -> "Открыть настройки Redmi/Xiaomi"
                         !PinCode.isSet(context) -> "Задать PIN"
                         !accessibilityEnabled -> "Включить защиту"
-                        else -> "Проверить службу"
+                        else -> "Восстановить защиту"
                     })
                 }
-                if (serviceEnabled) Text("Отключение доступно в системных настройках Android.", style = MaterialTheme.typography.bodySmall)
-            }
-        }
-        if (xiaomiDevice) ElevatedCard {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Обязательная настройка Redmi/Xiaomi", style = MaterialTheme.typography.titleLarge)
-                Text("MIUI/HyperOS может оставить экран FocusStep за Instagram и остановить службу при очистке недавних приложений. В карточке FocusStep открой «Другие разрешения»: разреши открывать новые окна и показывать всплывающие окна в фоне. Для работы после смахивания включи автозапуск и выбери для батареи режим «Без ограничений». Названия пунктов могут отличаться.")
-                OutlinedButton(onClick = { openApplicationSettings(context) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Открыть настройки FocusStep")
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = xiaomiWindowsConfirmed, onCheckedChange = {
-                        xiaomiWindowsConfirmed = it
-                        AppPrefs.setXiaomiWindowSetupConfirmed(context, it)
-                    })
-                    Text("Разрешил открытие окон и всплывающие окна в фоне")
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = xiaomiBackgroundConfirmed, onCheckedChange = {
-                        xiaomiBackgroundConfirmed = it
-                        AppPrefs.setXiaomiBackgroundSetupConfirmed(context, it)
-                    })
-                    Text("Включил автозапуск и снял ограничения батареи")
-                }
+                if (serviceEnabled) Text("Для отключения нужны PIN и подтверждение.", style = MaterialTheme.typography.bodySmall)
+                if (serviceEnabled) Text("После ответа доступ длится ${AppPrefs.accessMinutes(context)} мин. Обратный отсчёт виден в уведомлении FocusStep.", style = MaterialTheme.typography.bodySmall)
             }
         }
         ElevatedCard {
@@ -188,23 +224,39 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit) {
     if (showDisclosure) AlertDialog(
         onDismissRequest = { showDisclosure = false },
         title = { Text("Почему нужен доступ?") },
-        text = { Text("FocusStep использует службу специальных возможностей, чтобы получить событие о том, что на экране открылось приложение, которое ты сам выбрал. Содержимое экрана и вводимые данные не читаются и не отправляются. После включения Android покажет постоянный системный сервис; его можно отключить в любой момент в настройках.") },
-        confirmButton = { Button(onClick = { showDisclosure = false; context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }) { Text("Понятно, открыть настройки") } },
+        text = { Text("FocusStep использует службу специальных возможностей только для выбранных приложений. На следующем экране выбери FocusStep, включи переключатель и подтверди системный запрос. Android не разрешает приложению включить этот доступ за тебя. Содержимое экрана и вводимые данные не читаются и не отправляются.") },
+        confirmButton = { Button(onClick = {
+            showDisclosure = false
+            (context as? MainActivity)?.continueProtectionSetup() ?: openAccessibilitySettings(context)
+        }) { Text("Продолжить") } },
         dismissButton = { TextButton(onClick = { showDisclosure = false }) { Text("Отмена") } },
     )
-    if (showPinDialog) PinSetupDialog(onDone = { showPinDialog = false }, onCancel = { showPinDialog = false })
+    if (showPinDialog) PinSetupDialog(onDone = { showPinDialog = false; if (serviceEnabled) showDisablePinDialog = true }, onCancel = { showPinDialog = false })
+    if (showDisablePinDialog) PinVerifyDialog(
+        prompt = "Введи PIN, чтобы отключить защиту.",
+        onVerified = { showDisablePinDialog = false; showDisableConfirmation = true },
+        onCancel = { showDisablePinDialog = false },
+    )
+    if (showDisableConfirmation) AlertDialog(
+        onDismissRequest = { showDisableConfirmation = false },
+        title = { Text("Отключить защиту?") },
+        text = { Text("FocusStep очистит выбранные приложения и временные разрешения, выключит системную службу и снимет индикатор защиты.") },
+        confirmButton = { Button(onClick = {
+            AppPrefs.clearProtectionSettings(context)
+            context.sendBroadcast(Intent(com.chvertko.focusstep.monitor.AppMonitorService.ACTION_DISABLE_PROTECTION).setPackage(context.packageName))
+            showDisableConfirmation = false
+            onDisabled()
+        }, colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFFB94B43))) { Text("Отключить всё") } },
+        dismissButton = { TextButton(onClick = { showDisableConfirmation = false }) { Text("Отмена") } },
+    )
 }
 
-private fun openApplicationSettings(context: Context) {
-    context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-        data = Uri.fromParts("package", context.packageName, null)
-    })
-}
-
-private fun isXiaomiFamilyDevice(): Boolean {
-    val manufacturer = android.os.Build.MANUFACTURER.lowercase(Locale.ROOT)
-    val brand = android.os.Build.BRAND.lowercase(Locale.ROOT)
-    return listOf("xiaomi", "redmi", "poco").any { it in manufacturer || it in brand }
+private fun openAccessibilitySettings(context: Context) {
+    val component = ComponentName(context, com.chvertko.focusstep.monitor.AppMonitorService::class.java)
+    val detail = Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS")
+        .putExtra(Intent.EXTRA_COMPONENT_NAME, component)
+    val opened = runCatching { context.startActivity(detail) }.isSuccess
+    if (!opened) runCatching { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
 }
 
 @Composable
@@ -234,13 +286,15 @@ private fun QuestionsPage() {
 }
 
 @Composable
-private fun SettingsPage() {
+private fun SettingsPage(onDone: () -> Unit) {
     val context = LocalContext.current
     var wait by remember { mutableIntStateOf(AppPrefs.waitMinutes(context)) }
     var url by remember { mutableStateOf(AppPrefs.remoteUrl(context)) }
     var message by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf(AppPrefs.selectedApps(context)) }
+    var showWidgetStats by remember { mutableStateOf(AppPrefs.widgetStatsVisible(context)) }
+    var accessMinutes by remember { mutableIntStateOf(AppPrefs.accessMinutes(context)) }
     val apps = remember { launcherApps(context) }
     var appSearch by remember { mutableStateOf("") }
     var telemetryEnabled by remember { mutableStateOf(Telemetry.isEnabled(context)) }
@@ -262,6 +316,46 @@ private fun SettingsPage() {
             Text("Сбор метрик пока не настроен: Firebase конфигурация не добавлена в эту сборку.", style = MaterialTheme.typography.bodySmall)
         }
         HorizontalDivider()
+        ElevatedCard {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Выбрано для защиты · ${selected.size}", style = MaterialTheme.typography.titleMedium)
+                val chosen = apps.filter { it.first in selected }
+                if (chosen.isEmpty()) Text("Пока ничего не выбрано.", style = MaterialTheme.typography.bodySmall)
+                chosen.forEach { (packageName, label) ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(label, modifier = Modifier.weight(1f))
+                        TextButton(onClick = {
+                            selected = selected - packageName
+                            AppPrefs.setSelectedApps(context, selected)
+                            com.chvertko.focusstep.widget.FocusStepWidgetProvider.updateAll(context)
+                        }) { Text("Убрать") }
+                    }
+                }
+            }
+        }
+        ElevatedCard {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Виджет FocusStep", style = MaterialTheme.typography.titleMedium)
+                Text("Плашка показывает значок приложения, состояние защиты и статистику за день.", style = MaterialTheme.typography.bodySmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Показывать статистику", modifier = Modifier.weight(1f))
+                    Switch(checked = showWidgetStats, onCheckedChange = {
+                        showWidgetStats = it
+                        AppPrefs.setWidgetStatsVisible(context, it)
+                        com.chvertko.focusstep.widget.FocusStepWidgetProvider.updateAll(context)
+                    })
+                }
+                OutlinedButton(onClick = {
+                    val manager = android.appwidget.AppWidgetManager.getInstance(context)
+                    val provider = ComponentName(context, com.chvertko.focusstep.widget.FocusStepWidgetProvider::class.java)
+                    if (android.os.Build.VERSION.SDK_INT >= 26 && manager.isRequestPinAppWidgetSupported) {
+                        val sent = runCatching { manager.requestPinAppWidget(provider, null, null) }.getOrDefault(false)
+                        message = if (sent) "Подтверди добавление плашки на рабочий экран." else "Добавь FocusStep через список виджетов лаунчера."
+                    } else message = "Добавь FocusStep через список виджетов лаунчера."
+                }, modifier = Modifier.fillMaxWidth()) { Text("Добавить плашку на экран") }
+            }
+        }
+        Text("Добавить и убрать приложения", style = MaterialTheme.typography.titleMedium)
         Text("Выбери приложения. При их открытии появится вопрос или таймер.")
         OutlinedTextField(appSearch, { appSearch = it }, label = { Text("Поиск приложений") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         val filteredApps = apps.filter { it.second.contains(appSearch, ignoreCase = true) || it.first.contains(appSearch, ignoreCase = true) }
@@ -271,11 +365,13 @@ private fun SettingsPage() {
             Row(Modifier.fillMaxWidth().clickable {
                 selected = if (checked) selected - app.first else selected + app.first
                 AppPrefs.setSelectedApps(context, selected)
+                com.chvertko.focusstep.widget.FocusStepWidgetProvider.updateAll(context)
                 Telemetry.event(context, "monitored_app_selection_changed", mapOf("selected" to (!checked).toString(), "selected_count" to selected.size.toString()))
             }.padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = checked, onCheckedChange = { value ->
                     selected = if (value) selected + app.first else selected - app.first
                     AppPrefs.setSelectedApps(context, selected)
+                    com.chvertko.focusstep.widget.FocusStepWidgetProvider.updateAll(context)
                     Telemetry.event(context, "monitored_app_selection_changed", mapOf("selected" to value.toString(), "selected_count" to selected.size.toString()))
                 })
                 Column { Text(app.second); Text(app.first, style = MaterialTheme.typography.labelSmall) }
@@ -284,6 +380,17 @@ private fun SettingsPage() {
         HorizontalDivider()
         Text("Ожидание при пропуске: $wait мин")
         Slider(value = wait.toFloat(), onValueChange = { wait = it.toInt().coerceIn(2, 5); AppPrefs.setWaitMinutes(context, wait) }, valueRange = 2f..5f, steps = 2)
+        Text("Доступ после ответа: $accessMinutes мин")
+        Text("По окончании отсчёта вопрос снова появится, если ты всё ещё в выбранном приложении.", style = MaterialTheme.typography.bodySmall)
+        Slider(value = accessMinutes.toFloat(), onValueChange = {
+            accessMinutes = (it.toInt() / 5 * 5).coerceIn(5, 30)
+            AppPrefs.setAccessMinutes(context, accessMinutes)
+        }, valueRange = 5f..30f, steps = 4)
+        if (android.os.Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            OutlinedButton(onClick = { (context as? MainActivity)?.requestNotificationPermission() }) {
+                Text("Включить уведомление с таймером")
+            }
+        }
         HorizontalDivider()
         Text("Импорт вопросов из JSON по HTTPS", style = MaterialTheme.typography.titleMedium)
         Text("Файл должен содержать schemaVersion: 1 и массив questions. JSON проверяется перед заменой встроенного каталога.", style = MaterialTheme.typography.bodySmall)
@@ -344,7 +451,7 @@ private fun PinSetupDialog(onDone: () -> Unit, onCancel: () -> Unit) {
 }
 
 @Composable
-private fun PinVerifyDialog(onVerified: () -> Unit, onCancel: () -> Unit) {
+private fun PinVerifyDialog(prompt: String = "Введи PIN, чтобы изменить список приложений и правила.", onVerified: () -> Unit, onCancel: () -> Unit) {
     val context = LocalContext.current
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
@@ -353,7 +460,7 @@ private fun PinVerifyDialog(onVerified: () -> Unit, onCancel: () -> Unit) {
         title = { Text("Защитные настройки") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Введи PIN, чтобы изменить список приложений и правила.")
+                Text(prompt)
                 OutlinedTextField(pin, { pin = it.filter { c -> c.isDigit() }.take(12) }, label = { Text("PIN") })
                 if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error)
             }
