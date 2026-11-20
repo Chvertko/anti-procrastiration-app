@@ -34,12 +34,15 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val resumeState = mutableIntStateOf(0)
-    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-        openAccessibilitySettings(this)
+    private var continueSetupAfterNotification = false
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted && continueSetupAfterNotification) openAccessibilitySettings(this)
+        continueSetupAfterNotification = false
     }
 
     fun continueProtectionSetup() {
         if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            continueSetupAfterNotification = true
             notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         } else {
             openAccessibilitySettings(this)
@@ -48,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
     fun requestNotificationPermission() {
         if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            continueSetupAfterNotification = false
             notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
     }
@@ -61,6 +65,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        ProtectionStatusService.ensureRunning(this)
         com.chvertko.focusstep.widget.FocusStepWidgetProvider.updateAll(this)
         resumeState.intValue++
     }
@@ -76,6 +81,9 @@ private fun FocusStepApp(refreshKey: Int) {
     MaterialTheme(colorScheme = darkColorScheme(
         primary = androidx.compose.ui.graphics.Color(0xFF8DE0C1),
         secondary = androidx.compose.ui.graphics.Color(0xFFF4BD78),
+        onPrimary = androidx.compose.ui.graphics.Color(0xFF102019),
+        secondaryContainer = androidx.compose.ui.graphics.Color(0xFF244D40),
+        onSecondaryContainer = androidx.compose.ui.graphics.Color(0xFFB9F2DC),
         background = androidx.compose.ui.graphics.Color(0xFF101512),
         surface = androidx.compose.ui.graphics.Color(0xFF19211D),
     )) {
@@ -128,19 +136,17 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit, onDisabled: () -> 
     var showPinDialog by remember { mutableStateOf(false) }
     var showDisablePinDialog by remember { mutableStateOf(false) }
     var showDisableConfirmation by remember { mutableStateOf(false) }
-    val accessibilityEnabled = remember(refreshKey) { isMonitorEnabled(context) }
-    var serviceHeartbeatFresh by remember(refreshKey) { mutableStateOf(AppPrefs.isMonitorHeartbeatFresh(context)) }
+    var readiness by remember(refreshKey) { mutableStateOf(ProtectionReadinessChecker.check(context)) }
+    var showXiaomiGuide by remember { mutableStateOf(false) }
     val apps = remember(refreshKey) { AppPrefs.selectedApps(context) }
     val stats = remember(refreshKey) { AppPrefs.dailyStats(context) }
-    val serviceEnabled = accessibilityEnabled && serviceHeartbeatFresh && apps.isNotEmpty()
+    val serviceEnabled = readiness.isReady
 
-    LaunchedEffect(refreshKey, accessibilityEnabled) {
-        if (accessibilityEnabled && !serviceHeartbeatFresh) {
-            repeat(6) {
-                delay(2_000L)
-                serviceHeartbeatFresh = AppPrefs.isMonitorHeartbeatFresh(context)
-                if (serviceHeartbeatFresh) return@LaunchedEffect
-            }
+    LaunchedEffect(refreshKey) {
+        repeat(10) {
+            readiness = ProtectionReadinessChecker.check(context)
+            if (readiness.isReady) return@LaunchedEffect
+            delay(2_000L)
         }
     }
 
@@ -163,7 +169,7 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit, onDisabled: () -> 
                     when {
                         serviceEnabled -> "Защита активна"
                         apps.isEmpty() -> "Выбери приложения"
-                        accessibilityEnabled && !serviceHeartbeatFresh -> "Служба не отвечает"
+                        readiness.accessibilityEnabled && !readiness.serviceResponsive -> "Служба не отвечает"
                         else -> "Нужна настройка"
                     },
                     style = MaterialTheme.typography.titleLarge,
@@ -172,22 +178,45 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit, onDisabled: () -> 
                     when {
                         serviceEnabled -> "Служба работает в фоне. Выбрано приложений: ${apps.size}."
                         apps.isEmpty() -> "Сначала выбери приложения, для которых нужна пауза."
-                        accessibilityEnabled && !serviceHeartbeatFresh -> "Служба включена в Android, но сейчас не отвечает. Открой настройки специальных возможностей и проверь её состояние."
-                        AppPrefs.protectionRequested(context) -> "Android отключил или остановил службу. Нажми ниже, чтобы проверить разрешение и включить защиту снова."
-                        else -> "Включи доступ FocusStep в настройках специальных возможностей Android."
+                        else -> "Чтобы защита работала постоянно, выполни все пункты ниже."
                     },
                 )
+                if (!serviceEnabled) readiness.missing.forEach { item ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("• $item", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = {
+                            when {
+                                item.contains("приложение") -> onSettings()
+                                item.contains("PIN") -> showPinDialog = true
+                                item.contains("специальных") || item.contains("не отвечает") -> {
+                                    AppPrefs.setProtectionRequested(context, true)
+                                    showDisclosure = true
+                                }
+                                item.contains("уведомлен") -> (context as? MainActivity)?.requestNotificationPermission()
+                                item.contains("батареи") -> runCatching {
+                                    context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                                }
+                                else -> showXiaomiGuide = true
+                            }
+                        }) { Text("Настроить") }
+                    }
+                }
                 Button(onClick = {
                     if (serviceEnabled) {
                         if (PinCode.isSet(context)) showDisablePinDialog = true else showPinDialog = true
                     } else when {
                         apps.isEmpty() -> onSettings()
                         !PinCode.isSet(context) -> showPinDialog = true
-                        !accessibilityEnabled -> {
+                        !readiness.accessibilityEnabled -> {
                             AppPrefs.setProtectionRequested(context, true)
                             com.chvertko.focusstep.widget.FocusStepWidgetProvider.updateAll(context)
                             showDisclosure = true
                         }
+                        !readiness.notificationsAllowed -> (context as? MainActivity)?.requestNotificationPermission()
+                        !readiness.batteryUnrestricted -> runCatching {
+                            context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }
+                        readiness.isXiaomi && (!readiness.autostartConfirmed || !readiness.recentsLockConfirmed) -> showXiaomiGuide = true
                         else -> openAccessibilitySettings(context)
                     }
                 }, colors = if (serviceEnabled) ButtonDefaults.buttonColors(
@@ -198,8 +227,11 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit, onDisabled: () -> 
                         serviceEnabled -> "Отключить защиту"
                         apps.isEmpty() -> "Выбрать приложения"
                         !PinCode.isSet(context) -> "Задать PIN"
-                        !accessibilityEnabled -> "Включить защиту"
-                        else -> "Восстановить защиту"
+                        !readiness.accessibilityEnabled -> "Продолжить настройку"
+                        !readiness.notificationsAllowed -> "Разрешить уведомления"
+                        !readiness.batteryUnrestricted -> "Настроить батарею"
+                        readiness.isXiaomi && (!readiness.autostartConfirmed || !readiness.recentsLockConfirmed) -> "Настроить работу в фоне"
+                        else -> "Проверить настройки"
                     })
                 }
                 if (serviceEnabled) Text("Для отключения нужны PIN и подтверждение.", style = MaterialTheme.typography.bodySmall)
@@ -230,6 +262,18 @@ private fun HomePage(refreshKey: Int, onSettings: () -> Unit, onDisabled: () -> 
             (context as? MainActivity)?.continueProtectionSetup() ?: openAccessibilitySettings(context)
         }) { Text("Продолжить") } },
         dismissButton = { TextButton(onClick = { showDisclosure = false }) { Text("Отмена") } },
+    )
+    if (showXiaomiGuide) AlertDialog(
+        onDismissRequest = { showXiaomiGuide = false },
+        title = { Text("Фоновая работа Xiaomi") },
+        text = { Text("В настройках Xiaomi разреши FocusStep фоновый автозапуск и режим батареи «Без ограничений». В списке последних приложений закрепи FocusStep замком. Вернись сюда после настройки и отметь оба пункта. Xiaomi может завершать приложения через очистку памяти.") },
+        confirmButton = { Button(onClick = {
+            AppPrefs.setBackgroundAutostartConfirmed(context, true)
+            AppPrefs.setRecentsLockConfirmed(context, true)
+            showXiaomiGuide = false
+            readiness = ProtectionReadinessChecker.check(context)
+        }) { Text("Настроил оба пункта") } },
+        dismissButton = { TextButton(onClick = { showXiaomiGuide = false }) { Text("Позже") } },
     )
     if (showPinDialog) PinSetupDialog(onDone = { showPinDialog = false; if (serviceEnabled) showDisablePinDialog = true }, onCancel = { showPinDialog = false })
     if (showDisablePinDialog) PinVerifyDialog(

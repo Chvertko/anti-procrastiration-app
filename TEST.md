@@ -35,6 +35,8 @@ If instrumentation tests exist or are added, run them on a documented emulator/d
 - Verify the enable flow deep-links to the app-specific Accessibility page where supported and falls back to the general settings page elsewhere.
 - Verify gate action buttons remain above Android's system navigation area on gesture and three-button navigation modes.
 - Verify diagnostics stay off by default, opt-in/out works, and no answer text, package names, question content, or PIN enters telemetry/logs.
+- With protection requested, swipe FocusStep from Recents. Confirm its ongoing notification remains, open a selected app, and verify the gate still appears. Repeat after device reboot and app update; distinguish task dismissal from Android Task Manager stop/force-stop.
+- Verify every readiness item can be resolved from the dashboard and the green **Защита активна** state appears only when all platform requirements and a fresh monitor heartbeat are present. On Xiaomi, verify autostart/battery/Recents instructions and the confirmation flow.
 
 ## Device coverage
 
@@ -58,3 +60,13 @@ Run date: 2026-11-20. Device: Xiaomi 23030RAC7Y, Android 15 (API 35); app target
 - The first overlay build exposed a missing Compose `SavedStateRegistryOwner`; the owner was added before the later device run.
 - `:app:testDebugUnitTest` completed with `NO-SOURCE`; this repository currently has no unit-test sources.
 - Repeat the gate/countdown run with the old beta service temporarily disabled, then test wait/resume/expiry across leaving and reopening the selected app.
+
+### Background persistence/readiness follow-up (version code 21)
+
+- Device logs showed the most recent prior process exit was Xiaomi `OneKeyClean` (`OTHER KILLS BY SYSTEM`), and the Accessibility service was then listed as crashed. This is distinct from a new app crash.
+- Added `ProtectionStatusService`, an independently started sticky foreground service with `stopWithTask=false`, boot/app-update restart, and a persistent status/countdown notification. AccessibilityService no longer owns the foreground notification lifecycle.
+- Added readiness checklist for app selection, PIN, Accessibility enablement/heartbeat, notification access, battery optimization, and Xiaomi background autostart/Recents lock confirmations. Green active state is now gated on every requirement. Added direct notification and battery settings actions and Xiaomi guidance.
+- Added notification channel countdown/status text and status remains after the Activity task is removed by design. On Xiaomi, system/OEM clean-up may still kill the package; autostart and battery/Recents settings are required and no software can guarantee survival of a force-stop.
+- `:app:testDebugUnitTest :app:assembleDebug` succeeded, but test task reported `NO-SOURCE`; no unit tests currently exist.
+- Installed debug APK version code 21 on Xiaomi (`com.chvertko.focusstep.debug`). `dumpsys activity services` confirmed `ProtectionStatusService` is foreground (`foregroundId=4107`, `startRequested=true`); the process was running after install/launch. Recent logcat scan contained no `FATAL EXCEPTION` or FocusStepStatus error.
+- Manual UI capture showed the readiness items and action buttons fit above the system navigation bar. The device's ADB shell blocks injected key/touch events (`INJECT_EVENTS` SecurityException), so recents swipe and actual target-app gate/audio/countdown expiry still need manual interaction on the phone. Notification was checked in service state only; countdown behavior after a real answer is not yet manually verified.

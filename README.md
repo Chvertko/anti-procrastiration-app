@@ -4,7 +4,7 @@ FocusStep creates a short pause before selected apps. It shows an original JavaS
 
 This is a personal testing prototype. It uses an Android AccessibilityService to observe window changes for packages selected by the user. Google Play restricts this API; sideloading for personal testing does not establish Play Store eligibility. The service does not retrieve window content, text, screenshots, or input. Android lets the device owner disable the service or uninstall the app.
 
-While the AccessibilityService is connected, the app promotes it to a foreground service and shows an ongoing status notification. Android 14+ requires a declared foreground-service type; this build uses `specialUse` for user-requested app monitoring. A Play release also requires declaring this use case in Play Console and passing review. The foreground service improves persistence after dismissing the app task, but Android and device manufacturers may still stop it; protection cannot survive a user force-stop or revoked Accessibility access.
+When protection is requested, a separate sticky foreground status service shows an ongoing notification, including the temporary-access countdown. It is configured to remain running when the launcher task is dismissed and starts again after device restart or app update. Android 14+ requires a declared foreground-service type; this prototype uses `specialUse`. A Play release needs its own Play Console declaration and review. Android's force-stop/Task Manager stop and Xiaomi's OneKeyClean can still terminate app processes. On Xiaomi, complete the background autostart, unrestricted battery, and Recents lock steps shown on the dashboard. FocusStep reports protection active only while its required permissions and Accessibility heartbeat are present; no app can promise to survive a user force-stop or revoked access.
 
 ## Build a debug APK
 
@@ -86,9 +86,10 @@ Copy `app-debug.apk` to the phone, open it from Files, and allow installation fr
 5. Enable the FocusStep switch and confirm Android's system warning. Android requires this user action.
 6. Open a selected app. The question gate should appear. Answer correctly, or choose the wait timer; after the timer, tap the continue button.
 7. In **Настройки**, set the temporary unlock period (5–30 minutes, 10 by default); the ongoing notification shows its countdown. Allow notifications so Android can show the timer in the notification shade. The app dashboard also has a status-and-statistics card with the app icon.
-8. In **Настройки → Виджет FocusStep**, choose whether the launcher widget shows daily statistics and tap **Добавить плашку на экран**. Confirm the launcher prompt. The widget shows the app icon and protection status.
-9. If Android or the phone manufacturer stops the service, FocusStep remembers that protection was requested and shows a restore action. The widget also reports when the heartbeat becomes stale.
-10. To stop protection from the app, tap **Отключить защиту**, enter the PIN, and confirm. FocusStep clears the selected-app list and temporary grants and disables its AccessibilityService. You can also revoke the service in Android settings.
+8. On the dashboard, complete every item under **Нужна настройка**. FocusStep checks selected apps, PIN, Accessibility connection, notification permission/channel, battery optimization, and (on Xiaomi) asks you to confirm background autostart and locking FocusStep in Recents. The Xiaomi checks require following the displayed system steps; they are user confirmations because MIUI does not provide a reliable public API to inspect those switches.
+9. In **Настройки → Виджет FocusStep**, choose whether the launcher widget shows daily statistics and tap **Добавить плашку на экран**. Confirm the launcher prompt. The widget shows the app icon and protection status.
+10. If Android or the phone manufacturer stops the Accessibility service, FocusStep remembers that protection was requested and marks the missing requirement on the dashboard. The sticky notification reports status and the unlock countdown.
+11. To stop protection from the app, tap **Отключить защиту**, enter the PIN, and confirm. FocusStep clears the selected-app list and temporary grants and disables its AccessibilityService. You can also revoke the service in Android settings.
 
 The optional PIN protects edits made inside FocusStep. It cannot prevent a device owner from disabling the Android service, clearing app data, or uninstalling the app.
 

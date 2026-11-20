@@ -16,6 +16,14 @@ object AppPrefs {
     fun setWaitMinutes(context: Context, value: Int) { prefs(context).edit().putInt("wait_minutes", value.coerceIn(2, 5)).apply() }
     fun accessMinutes(context: Context): Int = prefs(context).getInt("access_minutes", 10).coerceIn(5, 30)
     fun setAccessMinutes(context: Context, value: Int) { prefs(context).edit().putInt("access_minutes", value.coerceIn(5, 30)).apply() }
+    fun setBackgroundAutostartConfirmed(context: Context, value: Boolean) { prefs(context).edit().putBoolean("background_autostart_confirmed", value).apply() }
+    fun backgroundAutostartConfirmed(context: Context): Boolean = prefs(context).getBoolean("background_autostart_confirmed", false)
+    fun setRecentsLockConfirmed(context: Context, value: Boolean) { prefs(context).edit().putBoolean("recents_lock_confirmed", value).apply() }
+    fun recentsLockConfirmed(context: Context): Boolean = prefs(context).getBoolean("recents_lock_confirmed", false)
+    fun setCurrentForegroundPackage(context: Context, packageName: String?) {
+        prefs(context).edit().putString("current_foreground_package", packageName).apply()
+    }
+    fun currentForegroundPackage(context: Context): String? = prefs(context).getString("current_foreground_package", null)
     fun remoteUrl(context: Context): String = prefs(context).getString("remote_url", "") ?: ""
     fun setRemoteUrl(context: Context, value: String) { prefs(context).edit().putString("remote_url", value.trim()).apply() }
 

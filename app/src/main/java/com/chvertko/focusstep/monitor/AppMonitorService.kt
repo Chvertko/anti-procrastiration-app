@@ -2,14 +2,9 @@ package com.chvertko.focusstep.monitor
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -29,7 +24,6 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import com.chvertko.focusstep.AppPrefs
 import com.chvertko.focusstep.Telemetry
-import com.chvertko.focusstep.MainActivity
 import com.chvertko.focusstep.ui.GateScreen
 
 class AppMonitorService : AccessibilityService() {
@@ -47,6 +41,7 @@ class AppMonitorService : AccessibilityService() {
             if (intent?.action != ACTION_DISABLE_PROTECTION) return
             removeGateOverlay()
             AppPrefs.clearProtectionSettings(this@AppMonitorService)
+            com.chvertko.focusstep.ProtectionStatusService.stop(this@AppMonitorService)
             disableSelf()
         }
     }
@@ -58,7 +53,7 @@ class AppMonitorService : AccessibilityService() {
         override fun run() {
             AppPrefs.recordMonitorHeartbeat(this@AppMonitorService)
             com.chvertko.focusstep.widget.FocusStepWidgetProvider.updateAll(this@AppMonitorService)
-            startStatusForeground()
+            com.chvertko.focusstep.ProtectionStatusService.refresh(this@AppMonitorService)
             heartbeatHandler.postDelayed(this, 20_000L)
         }
     }
@@ -77,7 +72,7 @@ class AppMonitorService : AccessibilityService() {
             }
             disableReceiverRegistered = true
         }
-        startStatusForeground()
+        com.chvertko.focusstep.ProtectionStatusService.refresh(this)
         heartbeatHandler.removeCallbacks(heartbeat)
         heartbeat.run()
     }
@@ -86,23 +81,24 @@ class AppMonitorService : AccessibilityService() {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val packageName = event.packageName?.toString() ?: return
         currentForegroundPackage = packageName
+        AppPrefs.setCurrentForegroundPackage(this, packageName)
         if (packageName == this.packageName) {
-            startStatusForeground()
+            com.chvertko.focusstep.ProtectionStatusService.refresh(this)
             return
         }
 
         if (packageName !in AppPrefs.selectedApps(this)) {
             if (overlayTarget != null) removeGateOverlay()
-            startStatusForeground()
+            com.chvertko.focusstep.ProtectionStatusService.refresh(this)
             return
         }
         if (AppPrefs.isAllowed(this, packageName)) {
             if (overlayTarget == packageName) removeGateOverlay()
             scheduleReblock(packageName)
-            startStatusForeground()
+            com.chvertko.focusstep.ProtectionStatusService.refresh(this)
             return
         }
-        startStatusForeground()
+        com.chvertko.focusstep.ProtectionStatusService.refresh(this)
         if (overlayTarget == packageName) return
 
         val now = System.currentTimeMillis()
@@ -129,10 +125,11 @@ class AppMonitorService : AccessibilityService() {
                         targetPackage = targetPackage,
                         onContinue = { completed ->
                             currentForegroundPackage = targetPackage
+                            AppPrefs.setCurrentForegroundPackage(this@AppMonitorService, targetPackage)
                             AppPrefs.grantAccess(this@AppMonitorService, targetPackage)
                             AppPrefs.recordOutcome(this@AppMonitorService, completed, 0)
                             scheduleReblock(targetPackage)
-                            startStatusForeground()
+                            com.chvertko.focusstep.ProtectionStatusService.refresh(this@AppMonitorService)
                             removeGateOverlay()
                         },
                         onReturnHome = {
@@ -187,12 +184,11 @@ class AppMonitorService : AccessibilityService() {
         heartbeatHandler.removeCallbacks(heartbeat)
         pendingReblock?.let(reblockHandler::removeCallbacks)
         AppPrefs.clearMonitorHeartbeat(this)
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        com.chvertko.focusstep.ProtectionStatusService.refresh(this)
         if (disableReceiverRegistered) {
             runCatching { unregisterReceiver(disableProtectionReceiver) }
             disableReceiverRegistered = false
         }
-        stopSelf()
         return super.onUnbind(intent)
     }
 
@@ -201,7 +197,7 @@ class AppMonitorService : AccessibilityService() {
         heartbeatHandler.removeCallbacks(heartbeat)
         pendingReblock?.let(reblockHandler::removeCallbacks)
         AppPrefs.clearMonitorHeartbeat(this)
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        com.chvertko.focusstep.ProtectionStatusService.refresh(this)
         if (disableReceiverRegistered) {
             runCatching { unregisterReceiver(disableProtectionReceiver) }
             disableReceiverRegistered = false
@@ -245,62 +241,15 @@ class AppMonitorService : AccessibilityService() {
                 !AppPrefs.isAllowed(this, targetPackage)) {
                 showGateOverlay(targetPackage)
             }
-            startStatusForeground()
+            com.chvertko.focusstep.ProtectionStatusService.refresh(this@AppMonitorService)
         }
         pendingReblock = task
         reblockHandler.postDelayed(task, (deadline - System.currentTimeMillis()).coerceAtLeast(0L))
     }
 
-    private fun startStatusForeground() {
-        val channelId = "focusstep_protection"
-        val manager = getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            manager.createNotificationChannel(NotificationChannel(channelId, "Статус защиты", NotificationManager.IMPORTANCE_LOW))
-        }
-        val openApp = PendingIntent.getActivity(
-            this, 1, Intent(this, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val activeGrantPackage = currentForegroundPackage?.takeIf { AppPrefs.isAllowed(this, it) }
-        val grantUntil = activeGrantPackage?.let { AppPrefs.allowedUntil(this, it) } ?: 0L
-        val grantLabel = activeGrantPackage?.let { packageName ->
-            runCatching { packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString() }
-                .getOrDefault("приложение")
-        }
-        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, channelId)
-        } else {
-            @Suppress("DEPRECATION") Notification.Builder(this)
-        }
-            .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
-            .setContentTitle(if (grantUntil > System.currentTimeMillis()) "FocusStep · временный доступ" else "FocusStep работает")
-            .setContentText(if (grantUntil > System.currentTimeMillis()) "$grantLabel · доступ ещё действует" else "Защита включена · ${AppPrefs.selectedApps(this).size} приложений")
-            .setContentIntent(openApp)
-            .setOngoing(true)
-            .setCategory(Notification.CATEGORY_SERVICE)
-            .apply {
-                if (grantUntil > System.currentTimeMillis()) {
-                    setWhen(grantUntil)
-                    setUsesChronometer(true)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) setChronometerCountDown(true)
-                }
-            }
-            .build()
-        runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-            } else {
-                startForeground(NOTIFICATION_ID, notification)
-            }
-        }.onFailure { error ->
-            Log.e(TAG, "Could not start status notification (${error.javaClass.simpleName})")
-            Telemetry.event(this, "foreground_status", mapOf("result" to "failure"))
-        }
-    }
-
     companion object {
         const val ACTION_DISABLE_PROTECTION = "com.chvertko.focusstep.action.DISABLE_PROTECTION"
         private const val TAG = "FocusStepOverlay"
-        private const val NOTIFICATION_ID = 4107
     }
 }
 

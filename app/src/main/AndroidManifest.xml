@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -38,11 +39,25 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/focusstep_widget_info" />
         </receiver>
+        <receiver android:name=".ProtectionBootReceiver" android:enabled="true" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <service
+            android:name=".ProtectionStatusService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keeps a user-visible protection status and temporary app access countdown running after the app task is dismissed." />
+        </service>
         <service
             android:name=".monitor.AppMonitorService"
             android:exported="true"
             android:label="@string/accessibility_service_name"
-            android:foregroundServiceType="specialUse"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
@@ -50,9 +65,6 @@
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/focusstep_accessibility_service" />
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Monitors user-selected apps to show their requested pause gate while they use other apps." />
         </service>
     </application>
 </manifest>
